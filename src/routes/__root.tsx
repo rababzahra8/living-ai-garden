@@ -12,7 +12,12 @@ import { useEffect, type ReactNode } from "react";
 import appCss from "../styles.css?url";
 import { ThemeProvider } from "@/lib/theme";
 import { Toaster } from "@/components/ui/sonner";
-import { supabase } from "@/integrations/supabase/client";
+import { redirectAuthCallbackToResetPassword } from "@/lib/app-url";
+import {
+  isSupabaseConfigured,
+  SupabaseConfigError,
+  supabase,
+} from "@/integrations/supabase/client";
 
 function NotFoundComponent() {
   return (
@@ -38,6 +43,9 @@ function NotFoundComponent() {
 
 function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   const router = useRouter();
+  const isConfigError =
+    error instanceof SupabaseConfigError || error.message.includes("Missing Supabase");
+
   useEffect(() => {
     console.error(error);
   }, [error]);
@@ -46,10 +54,12 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="max-w-md text-center">
         <h1 className="text-xl font-semibold tracking-tight text-foreground">
-          A gust of wind blew through
+          {isConfigError ? "The garden needs its roots" : "A gust of wind blew through"}
         </h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          Something went wrong. Try refreshing the garden.
+          {isConfigError
+            ? "Supabase environment variables are missing on this deployment. Add them in Cloudflare and redeploy."
+            : "Something went wrong. Try refreshing the garden."}
         </p>
         <div className="mt-6 flex flex-wrap justify-center gap-2">
           <button
@@ -116,7 +126,10 @@ function RootComponent() {
   const router = useRouter();
 
   useEffect(() => {
-    const { data: sub } = supabase.auth.onAuthStateChange((event) => {
+    redirectAuthCallbackToResetPassword();
+    if (!isSupabaseConfigured()) return;
+
+    const { data: sub } = supabase.auth.onAuthStateChange((event: AuthChangeEvent) => {
       if (event !== "SIGNED_IN" && event !== "SIGNED_OUT" && event !== "USER_UPDATED") return;
       router.invalidate();
       if (event !== "SIGNED_OUT") queryClient.invalidateQueries();
