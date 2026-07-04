@@ -1,4 +1,5 @@
 import { inferFlowerFromChat, parseStoredSpecies } from "@/lib/flower-mood";
+import { gardenWeatherFromEmotion } from "@/lib/garden-emotions";
 import { toneFromMoodString, type ConvoTone } from "@/lib/garden3d/tone-visuals";
 import type { SeedVisual } from "@/lib/garden3d/types";
 
@@ -17,16 +18,24 @@ function toneForSeed(seed: SeedVisual, threadTitles: Record<string, string>): Co
   const { mood } = parseStoredSpecies(seed.species);
   const storedTone = toneFromMoodString(mood);
 
-  // Stored mood from DB (updated each message) is primary
   if (storedTone !== "neutral") return storedTone;
 
-  // Fallback: infer from thread title (first message snippet)
   if (seed.thread_id && threadTitles[seed.thread_id]) {
     const inferred = inferFlowerFromChat(threadTitles[seed.thread_id], "");
     return toneFromMoodString(inferred.mood);
   }
 
   return storedTone;
+}
+
+function weatherForSeed(seed: SeedVisual, threadTitles: Record<string, string>): GardenWeather | null {
+  const { mood } = parseStoredSpecies(seed.species);
+  const fromCatalog = gardenWeatherFromEmotion(mood);
+  if (mood !== "neutral" && mood !== "reflection") {
+    return fromCatalog;
+  }
+  const tone = toneForSeed(seed, threadTitles);
+  return weatherFromTone(tone);
 }
 
 /** Derive garden weather from conversation moods. Latest thread wins. */
@@ -41,7 +50,7 @@ export function inferGardenWeather(
   if (latestThreadId) {
     const latestSeed = seeds.find((s) => s.thread_id === latestThreadId);
     if (latestSeed) {
-      const wx = weatherFromTone(toneForSeed(latestSeed, threadTitles));
+      const wx = weatherForSeed(latestSeed, threadTitles);
       if (wx) return wx;
     } else if (threadTitles[latestThreadId]) {
       const inferred = inferFlowerFromChat(threadTitles[latestThreadId], "");

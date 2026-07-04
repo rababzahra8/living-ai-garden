@@ -13,6 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { GardenBackdrop } from "@/components/garden/GardenBackdrop";
+import { LoadErrorPanel } from "@/components/LoadErrorPanel";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -61,6 +62,7 @@ function ChatPage() {
       if (error) throw error;
       return data as MessageRow[];
     },
+    retry: 1,
   });
 
   const seedQ = useQuery({
@@ -74,6 +76,7 @@ function ChatPage() {
       if (error) throw error;
       return data as { growth: number } | null;
     },
+    retry: 1,
   });
 
   const send = useMutation({
@@ -208,7 +211,23 @@ function ChatPage() {
 
       <ScrollArea className="relative z-10 flex-1">
         <div ref={scrollRef} className="mx-auto flex max-w-2xl flex-col gap-4 px-4 py-8">
-          {isEmpty && (
+          {messagesQ.isLoading && (
+            <div className="flex items-center justify-center gap-2 py-16 text-sm text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Loading conversation…
+            </div>
+          )}
+          {messagesQ.isError && (
+            <LoadErrorPanel
+              message={
+                messagesQ.error instanceof Error
+                  ? messagesQ.error.message
+                  : "Could not load this conversation"
+              }
+              onRetry={() => messagesQ.refetch()}
+            />
+          )}
+          {!messagesQ.isLoading && !messagesQ.isError && isEmpty && (
             <div className="mx-auto max-w-md py-16 text-center">
               <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
                 <Sparkles className="h-6 w-6" />
@@ -224,9 +243,11 @@ function ChatPage() {
               </p>
             </div>
           )}
-          {messages.map((m) => (
-            <MessageBubble key={m.id} role={m.role} content={m.content} />
-          ))}
+          {!messagesQ.isLoading &&
+            !messagesQ.isError &&
+            messages.map((m) => (
+              <MessageBubble key={m.id} role={m.role} content={m.content} />
+            ))}
           {send.isPending && (
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <Loader2 className="h-3.5 w-3.5 animate-spin" />

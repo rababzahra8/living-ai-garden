@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { toast } from "sonner";
 
 import { supabase } from "@/integrations/supabase/client";
@@ -45,6 +45,7 @@ function GardenPage() {
       if (error) throw error;
       return data as SeedRow[];
     },
+    retry: 1,
   });
 
   const threadsQ = useQuery({
@@ -57,7 +58,13 @@ function GardenPage() {
       if (error) throw error;
       return data as ThreadRow[];
     },
+    retry: 1,
   });
+
+  useEffect(() => {
+    const err = seedsQ.error ?? threadsQ.error;
+    if (err) toast.error(err instanceof Error ? err.message : "Could not load garden data");
+  }, [seedsQ.error, threadsQ.error]);
 
   const threadTitles = useMemo(() => {
     const map: Record<string, string> = {};

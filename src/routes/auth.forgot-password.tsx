@@ -3,6 +3,8 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { Leaf, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { formatAuthError } from "@/lib/auth-errors";
+import { GoogleSignInButton } from "@/components/auth/GoogleSignInButton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,10 +19,12 @@ function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
+  const [suggestGoogle, setSuggestGoogle] = useState(false);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    setSuggestGoogle(false);
     try {
       const redirectTo = `${window.location.origin}/auth/reset-password`;
       const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
@@ -28,7 +32,9 @@ function ForgotPasswordPage() {
       setSent(true);
       toast.success("Check your email for a reset link.");
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Could not send reset email");
+      const { message, suggestGoogle: useGoogle } = formatAuthError(err);
+      setSuggestGoogle(useGoogle);
+      toast.error(message, { duration: useGoogle ? 8000 : 4000 });
     } finally {
       setLoading(false);
     }
@@ -52,6 +58,22 @@ function ForgotPasswordPage() {
           </p>
         </CardHeader>
         <CardContent>
+          {suggestGoogle && (
+            <div className="mb-4 space-y-3">
+              <p className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-center text-xs text-amber-900 dark:text-amber-100">
+                Reset emails are paused for now. Sign in with Google on the login page instead.
+              </p>
+              <GoogleSignInButton
+                onClick={async () => {
+                  const { error } = await supabase.auth.signInWithOAuth({
+                    provider: "google",
+                    options: { redirectTo: `${window.location.origin}/auth` },
+                  });
+                  if (error) toast.error(error.message);
+                }}
+              />
+            </div>
+          )}
           {!sent ? (
             <form onSubmit={submit} className="space-y-4">
               <div className="space-y-2">

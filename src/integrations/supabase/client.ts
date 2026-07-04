@@ -68,6 +68,7 @@ function createUnconfiguredClient(): AppSupabaseClient {
       getUser: () => Promise.resolve({ data: { user: null }, error: configError() }),
       onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } }),
       signInWithPassword: () => Promise.resolve(emptyAuth),
+      signInWithOAuth: () => Promise.resolve({ data: { provider: "", url: "" }, error: configError() }),
       signUp: () => Promise.resolve(emptyAuth),
       signOut: () => Promise.resolve({ error: null }),
       updateUser: () => Promise.resolve({ data: { user: null }, error: configError() }),

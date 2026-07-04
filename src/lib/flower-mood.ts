@@ -1,13 +1,31 @@
 export type FlowerSpecies =
-  | "rose"
+  | "sunflower"
   | "daisy"
+  | "rose"
   | "tulip"
   | "lavender"
   | "cosmos"
+  | "lotus"
+  | "hibiscus"
+  | "cherryBlossom"
+  | "chamomile"
+  | "bluebell"
+  | "blackDahlia"
+  | "edelweiss"
+  | "aster"
+  | "hydrangea"
+  | "bleedingHeart"
+  | "passionflower"
+  | "nightJasmine"
+  | "marigold"
+  | "greenChrysanthemum"
+  | "thistle"
+  | "blackRose"
+  | "snapdragon"
+  | "reedGrass"
+  | "foxglove"
   | "crystal"
   | "glowTree"
-  | "lotus"
-  | "sunflower"
   | "cherry"
   | "worldTree";
 
@@ -136,7 +154,9 @@ const PROFILES: MoodProfile[] = [
     species: "sunflower",
     hue: 42,
     weight: 1,
-    patterns: [/\b(career|job|work|interview|resume|promotion|salary|office|professional|startup)\b/i],
+    patterns: [
+      /\b(career|job|work|interview|resume|promotion|salary|office|professional|startup)\b/i,
+    ],
   },
   {
     mood: "personal",
@@ -157,9 +177,21 @@ const PROFILES: MoodProfile[] = [
 ];
 
 /** Emotional moods outrank topic moods (work, code, etc.) for weather & flower tone. */
-const EMOTIONAL_MOODS = new Set(["happy", "joy", "sad", "negative", "love", "calm", "hope", "courage"]);
+const EMOTIONAL_MOODS = new Set([
+  "happy",
+  "joy",
+  "sad",
+  "negative",
+  "love",
+  "calm",
+  "hope",
+  "courage",
+]);
 
-function scoreProfiles(text: string, multiplier: number): Map<string, { profile: MoodProfile; score: number }> {
+function scoreProfiles(
+  text: string,
+  multiplier: number,
+): Map<string, { profile: MoodProfile; score: number }> {
   const scores = new Map<string, { profile: MoodProfile; score: number }>();
   for (const profile of PROFILES) {
     let score = 0;
@@ -179,7 +211,9 @@ function scoreProfiles(text: string, multiplier: number): Map<string, { profile:
   return scores;
 }
 
-function pickBestProfile(scores: Map<string, { profile: MoodProfile; score: number }>): MoodProfile | null {
+function pickBestProfile(
+  scores: Map<string, { profile: MoodProfile; score: number }>,
+): MoodProfile | null {
   let best: MoodProfile | null = null;
   let bestScore = 0;
   for (const { profile, score } of scores.values()) {

@@ -3,8 +3,9 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Leaf, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { ASYNC_TIMEOUT, getErrorMessage, withTimeout } from "@/lib/async-safe";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -25,20 +26,32 @@ function ResetPasswordPage() {
     let cancelled = false;
 
     const verifyRecovery = async () => {
-      const hash = window.location.hash;
-      if (hash.includes("type=recovery") || hash.includes("access_token")) {
-        await new Promise((r) => setTimeout(r, 100));
-      }
+      try {
+        const hash = window.location.hash;
+        if (hash.includes("type=recovery") || hash.includes("access_token")) {
+          await new Promise((r) => setTimeout(r, 100));
+        }
 
-      const { data, error } = await supabase.auth.getSession();
-      if (cancelled) return;
+        const { data, error } = await withTimeout(
+          supabase.auth.getSession(),
+          ASYNC_TIMEOUT.auth,
+          "Could not verify reset link",
+        );
+        if (cancelled) return;
 
-      if (error || !data.session) {
+        if (error) {
+          toast.error(error.message);
+          setCanReset(false);
+        } else {
+          setCanReset(Boolean(data.session));
+        }
+      } catch (err) {
+        if (cancelled) return;
+        toast.error(getErrorMessage(err, "Could not verify reset link"));
         setCanReset(false);
-      } else {
-        setCanReset(true);
+      } finally {
+        if (!cancelled) setChecking(false);
       }
-      setChecking(false);
     };
 
     const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
@@ -108,9 +121,8 @@ function ResetPasswordPage() {
             <form onSubmit={submit} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="password">New password</Label>
-                <Input
+                <PasswordInput
                   id="password"
-                  type="password"
                   autoComplete="new-password"
                   minLength={6}
                   required
@@ -120,9 +132,8 @@ function ResetPasswordPage() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="confirm">Confirm password</Label>
-                <Input
+                <PasswordInput
                   id="confirm"
-                  type="password"
                   autoComplete="new-password"
                   minLength={6}
                   required

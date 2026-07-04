@@ -273,3 +273,69 @@
   -webkit-backdrop-filter: blur(28px) !important;
   color: white;
 }
+
+/* Auth — lightweight drifting leaves (CSS only, transform + opacity) */
+@keyframes auth-leaf-drift-a {
+  0% {
+    transform: translate3d(0, -10vh, 0) rotate(0deg);
+    opacity: 0;
+  }
+  10% {
+    opacity: var(--leaf-opacity, 0.35);
+  }
+  100% {
+    transform: translate3d(36px, 110vh, 0) rotate(260deg);
+    opacity: 0;
+  }
+}
+
+@keyframes auth-leaf-drift-b {
+  0% {
+    transform: translate3d(0, -10vh, 0) rotate(15deg);
+    opacity: 0;
+  }
+  10% {
+    opacity: var(--leaf-opacity, 0.3);
+  }
+  100% {
+    transform: translate3d(-42px, 110vh, 0) rotate(-220deg);
+    opacity: 0;
+  }
+}
+
+.auth-screen {
+  background:
+    radial-gradient(ellipse 80% 60% at 50% 0%, oklch(0.92 0.06 145 / 0.45), transparent),
+    radial-gradient(ellipse 60% 50% at 80% 100%, oklch(0.88 0.05 100 / 0.35), transparent),
+    var(--background);
+}
+
+.dark .auth-screen {
+  background:
+    radial-gradient(ellipse 80% 60% at 50% 0%, oklch(0.35 0.08 150 / 0.35), transparent),
+    radial-gradient(ellipse 60% 50% at 20% 100%, oklch(0.28 0.06 240 / 0.5), transparent),
+    var(--background);
+}
+
+.auth-leaf {
+  position: absolute;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  will-change: transform;
+}
+
+.auth-leaf--a {
+  animation-name: auth-leaf-drift-a;
+}
+
+.auth-leaf--b {
+  animation-name: auth-leaf-drift-b;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auth-leaf {
+    animation: none;
+    opacity: 0.15;
+    top: 20%;
+  }
+}
