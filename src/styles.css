@@ -1,0 +1,275 @@
+@import "tailwindcss" source(none);
+@source "../src";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --color-sky: var(--sky);
+  --color-grass: var(--grass);
+  --color-grass-deep: var(--grass-deep);
+  --color-pond: var(--pond);
+  --color-pond-deep: var(--pond-deep);
+  --color-bark: var(--bark);
+  --color-leaf: var(--leaf);
+  --color-petal: var(--petal);
+  --color-sun: var(--sun);
+}
+
+:root {
+  --radius: 0.875rem;
+
+  /* Peaceful daylight garden */
+  --background: oklch(0.985 0.02 95);
+  --foreground: oklch(0.28 0.03 145);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.28 0.03 145);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.28 0.03 145);
+  --primary: oklch(0.55 0.14 150);
+  --primary-foreground: oklch(0.98 0.02 95);
+  --secondary: oklch(0.94 0.04 100);
+  --secondary-foreground: oklch(0.3 0.05 145);
+  --muted: oklch(0.95 0.02 110);
+  --muted-foreground: oklch(0.5 0.03 145);
+  --accent: oklch(0.85 0.09 45);
+  --accent-foreground: oklch(0.25 0.05 45);
+  --destructive: oklch(0.6 0.2 25);
+  --destructive-foreground: oklch(0.98 0.02 95);
+  --border: oklch(0.9 0.03 120);
+  --input: oklch(0.92 0.02 110);
+  --ring: oklch(0.55 0.14 150);
+
+  /* Garden scene tokens */
+  --sky: oklch(0.92 0.05 220);
+  --sky-2: oklch(0.85 0.08 220);
+  --grass: oklch(0.72 0.16 138);
+  --grass-deep: oklch(0.55 0.15 145);
+  --pond: oklch(0.75 0.08 210);
+  --pond-deep: oklch(0.5 0.09 220);
+  --bark: oklch(0.4 0.06 55);
+  --leaf: oklch(0.6 0.16 145);
+  --petal: oklch(0.82 0.15 20);
+  --sun: oklch(0.92 0.14 90);
+}
+
+.dark {
+  /* Moonlit night garden */
+  --background: oklch(0.18 0.03 240);
+  --foreground: oklch(0.94 0.02 120);
+  --card: oklch(0.23 0.03 240);
+  --card-foreground: oklch(0.94 0.02 120);
+  --popover: oklch(0.23 0.03 240);
+  --popover-foreground: oklch(0.94 0.02 120);
+  --primary: oklch(0.72 0.13 150);
+  --primary-foreground: oklch(0.18 0.03 240);
+  --secondary: oklch(0.27 0.03 240);
+  --secondary-foreground: oklch(0.94 0.02 120);
+  --muted: oklch(0.26 0.03 240);
+  --muted-foreground: oklch(0.7 0.03 130);
+  --accent: oklch(0.55 0.14 60);
+  --accent-foreground: oklch(0.96 0.02 90);
+  --destructive: oklch(0.55 0.2 25);
+  --destructive-foreground: oklch(0.98 0.02 95);
+  --border: oklch(0.3 0.03 240);
+  --input: oklch(0.28 0.03 240);
+  --ring: oklch(0.72 0.13 150);
+
+  --sky: oklch(0.28 0.06 260);
+  --sky-2: oklch(0.2 0.05 260);
+  --grass: oklch(0.4 0.1 145);
+  --grass-deep: oklch(0.3 0.08 150);
+  --pond: oklch(0.4 0.08 235);
+  --pond-deep: oklch(0.25 0.06 240);
+  --bark: oklch(0.28 0.04 45);
+  --leaf: oklch(0.5 0.12 150);
+  --petal: oklch(0.7 0.14 340);
+  --sun: oklch(0.9 0.08 90);
+}
+
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+}
+
+/* Garden animations — each butterfly drifts on its own lazy path */
+@keyframes float-butterfly-1 {
+  0%, 100% { transform: translate(0, 0) rotate(-5deg); }
+  18% { transform: translate(55px, -40px) rotate(7deg); }
+  36% { transform: translate(110px, -20px) rotate(-3deg); }
+  54% { transform: translate(70px, 35px) rotate(6deg); }
+  72% { transform: translate(15px, 50px) rotate(-6deg); }
+  90% { transform: translate(-25px, 20px) rotate(4deg); }
+}
+@keyframes float-butterfly-2 {
+  0%, 100% { transform: translate(0, 0) rotate(4deg); }
+  15% { transform: translate(-40px, -25px) rotate(-8deg); }
+  32% { transform: translate(-90px, 10px) rotate(5deg); }
+  50% { transform: translate(-55px, 45px) rotate(-4deg); }
+  68% { transform: translate(10px, 60px) rotate(7deg); }
+  85% { transform: translate(45px, 25px) rotate(-5deg); }
+}
+@keyframes float-butterfly-3 {
+  0%, 100% { transform: translate(0, 0) rotate(-3deg); }
+  20% { transform: translate(35px, 30px) rotate(6deg); }
+  40% { transform: translate(-30px, 55px) rotate(-7deg); }
+  60% { transform: translate(-75px, 25px) rotate(4deg); }
+  80% { transform: translate(-20px, -30px) rotate(-5deg); }
+}
+@keyframes float-butterfly-4 {
+  0%, 100% { transform: translate(0, 0) rotate(6deg); }
+  22% { transform: translate(-50px, -45px) rotate(-6deg); }
+  44% { transform: translate(20px, -70px) rotate(8deg); }
+  66% { transform: translate(85px, -35px) rotate(-4deg); }
+  88% { transform: translate(40px, 15px) rotate(5deg); }
+}
+@keyframes wing-flap-left {
+  0%, 100% { transform: rotate(0deg); }
+  50% { transform: rotate(-16deg); }
+}
+@keyframes wing-flap-right {
+  0%, 100% { transform: rotate(0deg); }
+  50% { transform: rotate(16deg); }
+}
+@keyframes sway {
+  0%, 100% { transform: rotate(-2deg); }
+  50% { transform: rotate(2deg); }
+}
+@keyframes bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+@keyframes ripple {
+  0% { transform: scale(0.6); opacity: 0.7; }
+  100% { transform: scale(1.6); opacity: 0; }
+}
+@keyframes sprout {
+  0% { transform: scale(0) translateY(10px); opacity: 0; }
+  100% { transform: scale(1) translateY(0); opacity: 1; }
+}
+@keyframes twinkle {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 1; }
+}
+
+.animate-butterfly-1 { animation: float-butterfly-1 55s ease-in-out infinite; }
+.animate-butterfly-2 { animation: float-butterfly-2 62s ease-in-out infinite; }
+.animate-butterfly-3 { animation: float-butterfly-3 50s ease-in-out infinite; }
+.animate-butterfly-4 { animation: float-butterfly-4 58s ease-in-out infinite; }
+.animate-wing-left { animation: wing-flap-left 0.75s ease-in-out infinite; transform-origin: 0px 3px; }
+.animate-wing-right { animation: wing-flap-right 0.75s ease-in-out infinite; transform-origin: 0px 3px; }
+.animate-sway { animation: sway 4s ease-in-out infinite; transform-origin: bottom center; }
+.animate-bob { animation: bob 3s ease-in-out infinite; }
+.animate-sprout { animation: sprout 0.9s cubic-bezier(0.16, 1, 0.3, 1); }
+.animate-twinkle { animation: twinkle 3s ease-in-out infinite; }
+
+/* ── 3D Garden glass UI ── */
+.glass-panel {
+  pointer-events: auto;
+  border-radius: 1.25rem;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: linear-gradient(145deg, rgba(15, 23, 42, 0.88), rgba(30, 41, 59, 0.82));
+  backdrop-filter: blur(24px) saturate(1.5);
+  -webkit-backdrop-filter: blur(24px) saturate(1.5);
+  box-shadow:
+    0 16px 48px rgba(0, 0, 0, 0.45),
+    0 0 0 1px rgba(255, 255, 255, 0.06) inset,
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+
+.glass-panel-hud {
+  background: linear-gradient(155deg, rgba(8, 15, 30, 0.92), rgba(20, 35, 55, 0.88));
+  border-color: rgba(255, 255, 255, 0.22);
+  box-shadow:
+    0 20px 50px rgba(0, 0, 0, 0.55),
+    0 0 40px rgba(52, 211, 153, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.14);
+}
+
+.glass-pill {
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(15, 23, 42, 0.72);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.35);
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.glass-button {
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(15, 23, 42, 0.78);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  color: rgba(255, 255, 255, 0.9);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.3);
+}
+
+.glass-button:hover {
+  background: rgba(30, 41, 59, 0.9);
+  border-color: rgba(167, 243, 208, 0.35);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), 0 0 20px rgba(52, 211, 153, 0.12);
+  transform: translateY(-1px);
+}
+
+.glass-button-primary {
+  border: 1px solid rgba(167, 243, 208, 0.35);
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.55), rgba(5, 150, 105, 0.35));
+  backdrop-filter: blur(12px);
+  box-shadow: 0 10px 36px rgba(0, 0, 0, 0.4), 0 0 24px rgba(52, 211, 153, 0.2);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.glass-button-primary:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 14px 44px rgba(0, 0, 0, 0.45), 0 0 32px rgba(52, 211, 153, 0.35);
+  border-color: rgba(167, 243, 208, 0.55);
+}
+
+.glass-stat {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  border-radius: 0.875rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.28);
+  padding: 0.625rem 0.75rem;
+}
+
+.glass-sheet {
+  background: rgba(8, 15, 30, 0.94) !important;
+  backdrop-filter: blur(28px) !important;
+  -webkit-backdrop-filter: blur(28px) !important;
+  color: white;
+}
