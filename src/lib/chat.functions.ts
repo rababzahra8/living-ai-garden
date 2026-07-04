@@ -1,8 +1,13 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { inferFlowerFromConversation, formatSeedSpecies } from "@/lib/flower-mood";
+import { formatSeedSpecies } from "@/lib/flower-mood";
 import { isWateringJoke } from "@/lib/water-jokes";
+import {
+  classifyEmotionWithLLM,
+  gardenerEmotionGuide,
+  resolveConversationMood,
+} from "@/lib/garden-emotions";
 
 const SYSTEM_PROMPT = `You are the Gardener — a warm, patient, and quietly wise guide who tends a small living garden that grows alongside your conversations with the visitor.
 
@@ -10,9 +15,12 @@ Speak gently and briefly. Reply in 1-3 short paragraphs. Use plain, sensory lang
 
 When the visitor shares a joke or humor, laugh warmly, enjoy it, and maybe offer a gentle garden-themed joke in return. Acknowledge that laughter is like water for their flower.
 
+${gardenerEmotionGuide()}
+
 Never mention that you are an AI, a language model, or anything technical. You are simply the Gardener.`;
 
 const MODEL = "gpt-4o-mini";
+const MAX_GROWTH = 3;
 
 // -------- Send a message and receive a reply (non-streaming) --------
 
@@ -31,7 +39,6 @@ export const sendGardenerMessage = createServerFn({ method: "POST" })
     const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey) throw new Error("Missing OPENAI_API_KEY");
 
-    // Verify thread ownership (RLS also enforces, but fail fast)
     const { data: thread, error: threadErr } = await supabase
       .from("threads")
       .select("id, title")
@@ -39,7 +46,6 @@ export const sendGardenerMessage = createServerFn({ method: "POST" })
       .maybeSingle();
     if (threadErr || !thread) throw new Error("Thread not found");
 
-    // Load history
     const { data: history } = await supabase
       .from("messages")
       .select("role, content")
@@ -54,7 +60,6 @@ export const sendGardenerMessage = createServerFn({ method: "POST" })
       { role: "user" as const, content: data.content },
     ];
 
-    // Save user message immediately
     const { error: insertUserErr } = await supabase.from("messages").insert({
       thread_id: data.threadId,
       user_id: userId,
@@ -84,7 +89,6 @@ export const sendGardenerMessage = createServerFn({ method: "POST" })
     };
     const reply = json.choices?.[0]?.message?.content?.trim() ?? "…";
 
-    // Save assistant reply
     await supabase.from("messages").insert({
       thread_id: data.threadId,
       user_id: userId,
@@ -92,7 +96,6 @@ export const sendGardenerMessage = createServerFn({ method: "POST" })
       content: reply,
     });
 
-    // Update thread title from first user message
     const isFirst = !history || history.length === 0;
     if (isFirst) {
       const title = data.content.slice(0, 60);
@@ -101,16 +104,15 @@ export const sendGardenerMessage = createServerFn({ method: "POST" })
       await supabase.from("threads").update({ updated_at: new Date().toISOString() }).eq("id", data.threadId);
     }
 
-const MAX_GROWTH = 3;
-
-    // Grow existing seed for this thread, or plant a new one
     const watered = isWateringJoke(data.content);
     const growthBump = watered ? 2 : 1;
 
     const priorText = (history ?? [])
       .filter((m) => m.role === "user" || m.role === "assistant")
       .map((m) => m.content);
-    const { hue, species, mood } = inferFlowerFromConversation(priorText, data.content, reply);
+
+    const llmEmotion = await classifyEmotionWithLLM(apiKey, MODEL, priorText, data.content, reply);
+    const { hue, species, mood } = resolveConversationMood(llmEmotion, priorText, data.content, reply);
 
     const { data: existingSeed } = await supabase
       .from("seeds")
@@ -148,7 +150,7 @@ const MAX_GROWTH = 3;
       });
     }
 
-    return { reply, watered, growth, mood };
+    return { reply, watered, growth, mood, emotion: llmEmotion?.emotion ?? mood };
   });
 
 // -------- Create a new conversation thread --------
@@ -158,7 +160,6 @@ export const createThread = createServerFn({ method: "POST" })
   .handler(async ({ context }) => {
     const { supabase, userId } = context;
 
-    // Reuse an existing empty thread if one exists — avoid piling up blanks.
     const { data: recent } = await supabase
       .from("threads")
       .select("id, messages(id)")
