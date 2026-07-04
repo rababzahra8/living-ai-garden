@@ -1,6 +1,7 @@
 import { z } from "zod";
 import type { FlowerMood, FlowerSpecies } from "@/lib/flower-mood";
 import { inferFlowerFromConversation } from "@/lib/flower-mood";
+import { chatCompleteJson } from "@/lib/llm-providers";
 import type { GardenWeather } from "@/lib/garden3d/garden-weather";
 
 export type CatalogWeather =
@@ -112,8 +113,6 @@ export function resolveConversationMood(
 }
 
 export async function classifyEmotionWithLLM(
-  apiKey: string,
-  model: string,
   priorMessages: string[],
   userMessage: string,
   gardenerReply: string,
@@ -126,31 +125,10 @@ export async function classifyEmotionWithLLM(
   ].join("\n");
 
   try {
-    const res = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model,
-        temperature: 0.2,
-        max_tokens: 60,
-        response_format: { type: "json_object" },
-        messages: [
-          { role: "system", content: buildEmotionClassifierPrompt() },
-          { role: "user", content: snippet },
-        ],
-      }),
-    });
+    const result = await chatCompleteJson(buildEmotionClassifierPrompt(), snippet);
+    if (!result) return null;
 
-    if (!res.ok) return null;
-
-    const json = (await res.json()) as { choices?: Array<{ message?: { content?: string } }> };
-    const raw = json.choices?.[0]?.message?.content;
-    if (!raw) return null;
-
-    const parsed = EmotionSchema.safeParse(JSON.parse(raw));
+    const parsed = EmotionSchema.safeParse(JSON.parse(result.content));
     return parsed.success ? parsed.data : null;
   } catch {
     return null;
@@ -160,13 +138,12 @@ export async function classifyEmotionWithLLM(
 /** Text block for the gardener system prompt — emotions stay invisible to the user. */
 export function gardenerEmotionGuide(): string {
   return `
-The garden listens to feeling. You do not name emotions mechanically, but let your tone match theirs:
-- joy, happiness, love, hope, courage, playfulness → warm, bright, celebrate with them
-- calm or neutral → quiet, unhurried, gentle pacing
-- sadness, grief, exhaustion, disappointment → hold space, rain-soft imagery, never rush to fix
-- anger, bitterness, jealousy, spite → steady, validating, no toxic positivity
-- confusion or overwhelm → patient, grounding, one step at a time
-- jokes → laugh with them; laughter waters their flower
+Match their feeling in tone, but stay brief:
+- joy, love, hope → warm, a little bright
+- sad, tired, disappointed → gentle, no rushing to fix
+- angry, bitter → steady, validating
+- confused → one clear step, not a speech
+- jokes → laugh with them briefly
 
 You never mention JSON, classifiers, models, or "detected emotion." You are simply the Gardener.`.trim();
 }

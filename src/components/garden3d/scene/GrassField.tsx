@@ -3,14 +3,13 @@ import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import { terrainHeight } from "@/lib/garden3d/math";
 
-const COUNT = 6000;
-
-export function GrassField() {
+export function GrassField({ lite = false }: { lite?: boolean }) {
+  const count = lite ? 900 : 6000;
   const ref = useRef<THREE.InstancedMesh>(null);
   const dummy = useMemo(() => new THREE.Object3D(), []);
 
   const blades = useMemo(() => {
-    return Array.from({ length: COUNT }, (_, i) => {
+    return Array.from({ length: count }, (_, i) => {
       const x = (Math.random() - 0.5) * 42;
       const z = (Math.random() - 0.5) * 38;
       const y = terrainHeight(x, z);
@@ -23,10 +22,11 @@ export function GrassField() {
         phase: Math.random() * Math.PI * 2,
       };
     });
-  }, []);
+  }, [count]);
 
   useFrame(({ clock }) => {
     if (!ref.current) return;
+    if (lite && Math.floor(clock.elapsedTime * 30) % 2 === 1) return;
     const t = clock.elapsedTime;
     blades.forEach((b, i) => {
       const sway = Math.sin(t * 1.2 + b.phase) * 0.08;
@@ -40,7 +40,7 @@ export function GrassField() {
   });
 
   return (
-    <instancedMesh ref={ref} args={[undefined, undefined, COUNT]} castShadow receiveShadow frustumCulled>
+    <instancedMesh ref={ref} args={[undefined, undefined, count]} castShadow={!lite} receiveShadow frustumCulled>
       <coneGeometry args={[1, 3, 3]} />
       <meshStandardMaterial color="#4a8f52" roughness={0.85} flatShading />
     </instancedMesh>

@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { createThread, deleteThread } from "@/lib/chat.functions";
 import { inferGardenWeather } from "@/lib/garden3d/garden-weather";
+import { useTransientGardenWeather } from "@/lib/garden3d/use-transient-weather";
 import { ClientGardenCanvas } from "@/components/garden3d/ClientGardenCanvas";
 import { GardenChrome } from "@/components/garden3d/ui/GardenChrome";
 import { useTheme } from "@/lib/theme";
@@ -127,9 +128,19 @@ function GardenPage() {
   const seeds = seedsQ.data ?? [];
   const energy = energyQ.data ?? 0;
   const activeSeeds = useMemo(() => seeds.filter((s) => s.thread_id && !s.deleted_at), [seeds]);
-  const weather = useMemo(
+  const inferredWeather = useMemo(
     () => inferGardenWeather(activeSeeds, threadTitles, threadsQ.data?.[0]?.id ?? null),
     [activeSeeds, threadTitles, threadsQ.data],
+  );
+  const latestThread = threadsQ.data?.[0];
+  const latestSeed = useMemo(
+    () => activeSeeds.find((s) => s.thread_id === latestThread?.id),
+    [activeSeeds, latestThread?.id],
+  );
+  const weatherEmotionKey = `${latestThread?.updated_at ?? ""}:${latestSeed?.species ?? ""}:${inferredWeather}`;
+  const { weather, strength: weatherStrength } = useTransientGardenWeather(
+    inferredWeather,
+    weatherEmotionKey,
   );
 
   return (
@@ -141,6 +152,8 @@ function GardenPage() {
         latestThreadId={threadsQ.data?.[0]?.id ?? null}
         nightMode={theme === "dark"}
         energy={energy}
+        weather={weather}
+        weatherStrength={weatherStrength}
         onGardenerClick={() => startChat.mutate()}
         onFlowerClick={goToThread}
       />
@@ -149,6 +162,8 @@ function GardenPage() {
         energy={energy}
         seeds={seeds}
         weather={weather}
+        inferredWeather={inferredWeather}
+        nightMode={theme === "dark"}
         threads={threadsQ.data ?? []}
         threadsOpen={threadsOpen}
         onThreadsOpenChange={setThreadsOpen}

@@ -9,18 +9,24 @@ import {
   resolveConversationMood,
 } from "@/lib/garden-emotions";
 import { allocateConversationNumber, grantMessageEnergy } from "@/lib/garden-energy.server";
+import { chatComplete, hasLlmProvider } from "@/lib/llm-providers";
 
-const SYSTEM_PROMPT = `You are the Gardener — a warm, patient, and quietly wise guide who tends a small living garden that grows alongside your conversations with the visitor.
+const SYSTEM_PROMPT = `You are the Gardener — warm and wise, tending a garden that grows with each conversation.
 
-Speak gently and briefly. Reply in 1-3 short paragraphs. Use plain, sensory language (light, soil, breeze, roots). Offer thoughtful reflection or gentle questions rather than lectures. You may reference the garden itself — the seed you planted for them, the growing flowers, the pond, the butterflies.
+Brevity is essential:
+- Most replies: 1–2 sentences. Hard cap: 3 short sentences. Never write paragraphs.
+- Lead with a direct answer to what they said. Do not wander or rephrase their message back at them.
+- Garden imagery is optional — at most one light touch per reply, not every sentence.
+- Match their energy and length: if they write "ok", "no", or one line, reply in one line.
+- At most one short question, and only when it clearly helps — never stack questions or add filler ("Ah, I see…", "Let's walk together…").
+- Skip preambles. No lectures, no monologues, no poetic descriptions unless they asked for something reflective.
 
-When the visitor shares a joke or humor, laugh warmly, enjoy it, and maybe offer a gentle garden-themed joke in return. Acknowledge that laughter is like water for their flower.
+When they share a joke, laugh briefly — one sentence — maybe a tiny garden quip.
 
 ${gardenerEmotionGuide()}
 
-Never mention that you are an AI, a language model, or anything technical. You are simply the Gardener.`;
+Never mention AI, models, or classifiers. You are simply the Gardener.`;
 
-const MODEL = "gpt-4o-mini";
 const MAX_GROWTH = 3;
 
 // -------- Send a message and receive a reply (non-streaming) --------
@@ -37,8 +43,11 @@ export const sendGardenerMessage = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
-    const apiKey = process.env.OPENAI_API_KEY;
-    if (!apiKey) throw new Error("Missing OPENAI_API_KEY");
+    if (!hasLlmProvider()) {
+      throw new Error(
+        "No LLM configured. Set OPENAI_API_KEY and/or free fallbacks GROQ_API_KEY, GEMINI_API_KEY.",
+      );
+    }
 
     const { data: thread, error: threadErr } = await supabase
       .from("threads")
@@ -69,26 +78,10 @@ export const sendGardenerMessage = createServerFn({ method: "POST" })
     });
     if (insertUserErr) throw insertUserErr;
 
-    const res = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({ model: MODEL, messages }),
+    const { content: reply } = await chatComplete(messages, {
+      temperature: 0.6,
+      maxTokens: 120,
     });
-
-    if (!res.ok) {
-      const text = await res.text().catch(() => "");
-      if (res.status === 429) throw new Error("The garden is a little crowded — try again in a moment.");
-      if (res.status === 401) throw new Error("Invalid OpenAI API key.");
-      throw new Error(`Gardener is quiet (${res.status}): ${text.slice(0, 200)}`);
-    }
-
-    const json = (await res.json()) as {
-      choices?: Array<{ message?: { content?: string } }>;
-    };
-    const reply = json.choices?.[0]?.message?.content?.trim() ?? "…";
 
     await supabase.from("messages").insert({
       thread_id: data.threadId,
@@ -112,7 +105,7 @@ export const sendGardenerMessage = createServerFn({ method: "POST" })
       .filter((m) => m.role === "user" || m.role === "assistant")
       .map((m) => m.content);
 
-    const llmEmotion = await classifyEmotionWithLLM(apiKey, MODEL, priorText, data.content, reply);
+    const llmEmotion = await classifyEmotionWithLLM(priorText, data.content, reply);
     const { hue, species, mood } = resolveConversationMood(llmEmotion, priorText, data.content, reply);
 
     const { data: existingSeed } = await supabase

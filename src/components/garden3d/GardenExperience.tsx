@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import { Canvas } from "@react-three/fiber";
 import { Loader } from "@react-three/drei";
 import { GardenScene } from "./scene/GardenScene";
+import type { GardenWeather } from "@/lib/garden3d/garden-weather";
 import type { GardenMode, SeedVisual } from "@/lib/garden3d/types";
 
 export type GardenExperienceProps = {
@@ -13,6 +14,8 @@ export type GardenExperienceProps = {
   onFlowerClick?: (threadId: string) => void;
   nightMode?: boolean;
   energy?: number;
+  weather?: GardenWeather;
+  weatherStrength?: number;
 };
 
 export default function GardenExperience({
@@ -24,12 +27,14 @@ export default function GardenExperience({
   onFlowerClick,
   nightMode = false,
   energy = 0,
+  weather,
+  weatherStrength = 1,
 }: GardenExperienceProps) {
   return (
     <>
       <Canvas
-        shadows
-        dpr={[1, 1.75]}
+        shadows={mode !== "landing"}
+        dpr={mode === "landing" ? [1, 1.15] : [1, 1.75]}
         camera={{ position: [0, 5.5, 13], fov: 42, near: 0.1, far: 120 }}
         gl={{ antialias: true, powerPreference: "high-performance" }}
         className="absolute inset-0 touch-none"
@@ -44,6 +49,8 @@ export default function GardenExperience({
             onFlowerClick={onFlowerClick}
             nightMode={nightMode}
             energy={energy}
+            weather={weather}
+            weatherStrength={weatherStrength}
           />
         </Suspense>
       </Canvas>

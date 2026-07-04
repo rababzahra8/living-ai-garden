@@ -1,11 +1,18 @@
 import { Link } from "@tanstack/react-router";
 import { Sparkles } from "lucide-react";
 
-export function LandingOverlay() {
+export function LandingOverlay({ showcaseLabel }: { showcaseLabel?: string }) {
   return (
     <div className="pointer-events-none absolute inset-0 z-10 flex min-h-0 flex-col overflow-hidden pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
-      <div className="pointer-events-auto flex shrink-0 justify-end p-3 sm:p-5">
-        <div className="glass-pill max-w-[calc(100vw-1.5rem)] px-3 py-1.5 text-[10px] leading-snug text-white/60 sm:text-xs">
+      <div className="pointer-events-auto flex shrink-0 items-start justify-between gap-2 p-3 sm:p-5">
+        {showcaseLabel ? (
+          <div className="glass-pill max-w-[calc(100vw-8rem)] px-3 py-1.5 text-[10px] leading-snug text-white/70 sm:text-xs">
+            <span className="text-emerald-300">✦</span> Developer garden · {showcaseLabel}
+          </div>
+        ) : (
+          <div />
+        )}
+        <div className="glass-pill shrink-0 px-3 py-1.5 text-[10px] leading-snug text-white/60 sm:text-xs">
           <span className="hidden sm:inline">Drag to explore · scroll to zoom</span>
           <span className="sm:hidden">Drag · scroll to zoom</span>
         </div>
@@ -22,8 +29,8 @@ export function LandingOverlay() {
             The Living AI Garden
           </h1>
           <p className="mt-3 text-pretty text-sm leading-relaxed text-white/65 sm:mt-5 sm:text-lg">
-            Step into a peaceful three-dimensional meadow. Every conversation plants a seed that grows
-            into a unique flower — your memories blooming into a forest over time.
+            Explore the developer&apos;s living meadow — flowers, trees, huts, sun and moon, weather
+            that shifts with feeling. Sign in to plant your own garden from every conversation.
           </p>
           <div className="mt-6 flex flex-col items-center justify-center gap-3 sm:mt-8">
             <Link

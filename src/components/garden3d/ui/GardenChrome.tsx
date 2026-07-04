@@ -24,6 +24,8 @@ export function GardenChrome({
   energy,
   seeds,
   weather = "clear",
+  inferredWeather = "clear",
+  nightMode = false,
   threads,
   threadsOpen,
   onThreadsOpenChange,
@@ -37,6 +39,8 @@ export function GardenChrome({
   energy: number;
   seeds: { thread_id: string | null; deleted_at?: string | null }[];
   weather?: GardenWeather;
+  inferredWeather?: GardenWeather;
+  nightMode?: boolean;
   threads: ThreadRow[];
   threadsOpen: boolean;
   onThreadsOpenChange: (open: boolean) => void;
@@ -48,18 +52,23 @@ export function GardenChrome({
   deletePending?: boolean;
 }) {
   const stats = computeGardenStats(energy, seeds);
+  const hudWeather = weather !== "clear" ? weather : inferredWeather;
 
   return (
     <>
-      <header className="absolute inset-x-0 top-0 z-20 flex items-start justify-between gap-4 p-4 md:p-5">
-        <GardenHUD stats={stats} weather={weather} />
+      <header className="absolute inset-x-0 top-0 z-20 flex items-start justify-between gap-1.5 p-2 sm:gap-3 sm:p-4 md:p-5">
+        <GardenHUD stats={stats} weather={hudWeather} nightMode={nightMode} />
 
-        <div className="pointer-events-auto flex items-center gap-2">
+        <div className="pointer-events-auto flex shrink-0 items-center gap-1 sm:gap-2">
           <Sheet open={threadsOpen} onOpenChange={onThreadsOpenChange}>
             <SheetTrigger asChild>
-              <button type="button" className="glass-button rounded-full px-4 py-2 text-sm text-white/90">
-                <MessageCircle className="mr-2 inline h-4 w-4" />
-                Conversations
+              <button
+                type="button"
+                aria-label="Conversations"
+                className="glass-button flex h-9 w-9 items-center justify-center rounded-full sm:h-auto sm:w-auto sm:px-4 sm:py-2"
+              >
+                <MessageCircle className="h-4 w-4 sm:mr-2" />
+                <span className="hidden text-sm text-white/90 sm:inline">Conversations</span>
               </button>
             </SheetTrigger>
             <SheetContent side="right" className="glass-sheet w-full border-white/10 sm:max-w-sm">
@@ -94,7 +103,7 @@ export function GardenChrome({
                             type="button"
                             aria-label={`Delete ${t.title}`}
                             disabled={deletePending}
-                            className="rounded-lg p-2 text-white/40 opacity-0 transition-all hover:bg-red-500/20 hover:text-red-300 group-hover:opacity-100"
+                            className="rounded-lg p-2 text-white/40 opacity-100 transition-all hover:bg-red-500/20 hover:text-red-300 sm:opacity-0 sm:group-hover:opacity-100"
                           >
                             <Trash2 className="h-4 w-4" />
                           </button>
@@ -135,18 +144,29 @@ export function GardenChrome({
             type="button"
             onClick={onSignOut}
             aria-label="Sign out"
-            className="glass-button flex h-10 w-10 items-center justify-center rounded-full"
+            className="glass-button flex h-9 w-9 items-center justify-center rounded-full sm:h-10 sm:w-10"
           >
             <LogOut className="h-4 w-4 text-white/80" />
           </button>
         </div>
       </header>
 
-      <div className="pointer-events-none absolute inset-x-0 bottom-6 z-20 flex justify-center">
-        <div className="glass-pill px-5 py-2.5 text-xs text-white/55">
+      <div className="pointer-events-none absolute inset-x-0 bottom-3 z-20 flex justify-center px-2 sm:bottom-6">
+        <div className="glass-pill max-w-[calc(100vw-1rem)] px-3 py-2 text-center text-[10px] leading-snug text-white/55 sm:max-w-none sm:px-5 sm:py-2.5 sm:text-xs">
           {weather === "rainbow"
             ? "🌈 Rainbow over the horizon — drag to look behind the flowers"
-            : "Drag to look around · scroll to zoom · tell jokes to water flowers"}
+            : weather === "rain"
+              ? "🌧️ Gentle rain — fades soon; new feelings bring weather back"
+              : inferredWeather === "rain"
+                ? "Skies clearing — your garden still listens"
+                : inferredWeather === "rainbow"
+                  ? "Joy lingers in the air ✨"
+                  : (
+                    <>
+                      <span className="hidden sm:inline">Drag to look around · scroll to zoom · tell jokes to water flowers</span>
+                      <span className="sm:hidden">Drag to look · pinch to zoom</span>
+                    </>
+                  )}
         </div>
       </div>
     </>
