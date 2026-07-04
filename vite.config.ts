@@ -7,8 +7,15 @@ import tsconfigPaths from "vite-tsconfig-paths";
 
 export default defineConfig(({ mode, command }) => {
   const envDefine: Record<string, string> = {};
-  for (const [key, value] of Object.entries(loadEnv(mode, process.cwd(), "VITE_"))) {
-    envDefine[`import.meta.env.${key}`] = JSON.stringify(value);
+  const viteEnv = loadEnv(mode, process.cwd(), "VITE_");
+  for (const [key, value] of Object.entries(viteEnv)) {
+    if (value) envDefine[`import.meta.env.${key}`] = JSON.stringify(value);
+  }
+  // CI build vars (e.g. Cloudflare Workers Builds) may only exist on process.env.
+  for (const [key, value] of Object.entries(process.env)) {
+    if (key.startsWith("VITE_") && value) {
+      envDefine[`import.meta.env.${key}`] = JSON.stringify(value);
+    }
   }
 
   const plugins = [

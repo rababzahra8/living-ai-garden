@@ -5,8 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite dev",
-    "build": "node scripts/ensure-native-bindings.mjs && vite build",
-    "build:dev": "node scripts/ensure-native-bindings.mjs && vite build --mode development",
+    "build": "node scripts/ensure-native-bindings.mjs && node scripts/sync-vite-env.mjs && vite build",
+    "build:dev": "node scripts/ensure-native-bindings.mjs && node scripts/sync-vite-env.mjs && vite build --mode development",
     "verify:ci": "npm ci --progress=false && npm run build",
     "preview": "vite preview",
     "lint": "eslint .",
