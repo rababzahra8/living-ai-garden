@@ -180,8 +180,6 @@ Still set the three `VITE_*` build variables above for the browser bundle.
 
 Connect the repo to Cloudflare Workers Builds (or push to the connected branch) so pushes to `main` deploy automatically.
 
-> **Lovable:** This repo syncs with [Lovable](https://lovable.dev). Avoid force-pushing or rewriting history on `main`.
-
 ---
 
 ## Project layout

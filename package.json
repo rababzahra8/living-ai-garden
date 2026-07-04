@@ -12,7 +12,8 @@
     "lint": "eslint .",
     "format": "prettier --write .",
     "cf:secrets": "node scripts/push-cloudflare-secrets.mjs",
-    "cf:secrets:ci": "node scripts/push-cloudflare-secrets.mjs --ci"
+    "cf:secrets:ci": "node scripts/push-cloudflare-secrets.mjs --ci",
+    "icons": "node scripts/generate-icons.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",

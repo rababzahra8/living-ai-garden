@@ -12,7 +12,7 @@ import { useEffect, type ReactNode } from "react";
 import appCss from "../styles.css?url";
 import { ThemeProvider } from "@/lib/theme";
 import { Toaster } from "@/components/ui/sonner";
-import { redirectAuthCallbackToResetPassword } from "@/lib/app-url";
+import { getAppOrigin, redirectAuthCallbackToResetPassword } from "@/lib/app-url";
 import {
   isSupabaseConfigured,
   SupabaseConfigError,
@@ -78,7 +78,11 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
 }
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
-  head: () => ({
+  head: () => {
+    const origin = getAppOrigin().replace(/\/$/, "");
+    const ogImage = `${origin}/og-image.jpg`;
+
+    return {
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
@@ -94,13 +98,25 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         content: "A living 3D garden where every chat plants a seed that blooms into something unique.",
       },
       { property: "og:type", content: "website" },
+      { property: "og:url", content: origin },
+      { property: "og:image", content: ogImage },
+      { property: "og:image:width", content: "1200" },
+      { property: "og:image:height", content: "753" },
       { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: "Living AI Garden" },
+      {
+        name: "twitter:description",
+        content: "A living 3D garden where every chat plants a seed that blooms into something unique.",
+      },
+      { name: "twitter:image", content: ogImage },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
-      { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
+      { rel: "icon", href: "/favicon.ico", sizes: "any" },
+      { rel: "apple-touch-icon", href: "/apple-touch-icon.png", sizes: "180x180" },
     ],
-  }),
+  };
+  },
   shellComponent: RootShell,
   component: RootComponent,
   notFoundComponent: NotFoundComponent,
