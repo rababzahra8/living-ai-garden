@@ -5,8 +5,10 @@
   "type": "module",
   "scripts": {
     "dev": "vite dev",
-    "build": "vite build",
-    "build:dev": "vite build --mode development",
+    "build": "node scripts/ensure-native-bindings.mjs && vite build",
+    "build:dev": "node scripts/ensure-native-bindings.mjs && vite build --mode development",
+    "postinstall": "node scripts/ensure-native-bindings.mjs",
+    "verify:ci": "npm ci --progress=false && npm run build",
     "preview": "vite preview",
     "lint": "eslint .",
     "format": "prettier --write ."
@@ -89,9 +91,14 @@
     "typescript-eslint": "^8.56.1",
     "vite": "^8.0.16"
   },
+  "engines": {
+    "node": ">=22.12.0"
+  },
   "optionalDependencies": {
-    "@rolldown/binding-linux-x64-gnu": "1.0.3",
-    "@rolldown/binding-linux-x64-musl": "1.0.3",
+    "@rolldown/binding-linux-x64-gnu": "1.1.0",
+    "@rolldown/binding-linux-x64-musl": "1.1.0",
+    "@tailwindcss/oxide-linux-x64-gnu": "4.2.4",
+    "@tailwindcss/oxide-linux-x64-musl": "4.2.4",
     "lightningcss-linux-x64-gnu": "1.32.0",
     "lightningcss-linux-x64-musl": "1.32.0"
   }
