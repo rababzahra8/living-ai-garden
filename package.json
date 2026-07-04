@@ -10,7 +10,9 @@
     "verify:ci": "npm ci --progress=false && npm run build",
     "preview": "vite preview",
     "lint": "eslint .",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "cf:secrets": "node scripts/push-cloudflare-secrets.mjs",
+    "cf:secrets:ci": "node scripts/push-cloudflare-secrets.mjs --ci"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",

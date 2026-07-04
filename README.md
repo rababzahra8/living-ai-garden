@@ -136,27 +136,47 @@ npm run verify:ci # clean install + build (CI-style)
 
 ## Deploy (Cloudflare Workers)
 
-Cloudflare needs **two separate** env configurations — build-time vars are not available at runtime.
+Cloudflare uses **two env buckets**. Build vars bake into the browser bundle; runtime secrets power SSR and chat. They do not carry over between each other.
 
-### A) Runtime — Settings → Variables and secrets
+### One-time setup (stop re-pasting keys every deploy)
 
-Used when the worker handles SSR and chat:
+**1. Runtime secrets** — from your machine, once:
 
-- `SUPABASE_URL`
-- `SUPABASE_PUBLISHABLE_KEY`
-- `OPENAI_API_KEY`
-- `GROQ_API_KEY` (recommended)
-- `GEMINI_API_KEY` (recommended)
+```bash
+npx wrangler login   # first time only
+npm run cf:secrets   # reads .env → uploads to worker "living-ai-garden"
+```
 
-### B) Build — Settings → Builds → Build variables
+This uses `wrangler secret bulk`. Secrets persist on the worker until you change them.
 
-Baked into the browser bundle during `npm run build`:
+**2. Build variables** — Cloudflare dashboard → **Settings → Builds → Build variables** (set once):
 
-- `VITE_SUPABASE_URL`
-- `VITE_SUPABASE_PUBLISHABLE_KEY`
-- `VITE_APP_URL` (your production URL, e.g. `https://living-ai-garden.r-rababzahra888.workers.dev`)
+| Variable | Example |
+|---|---|
+| `VITE_SUPABASE_URL` | `https://your-project.supabase.co` |
+| `VITE_SUPABASE_PUBLISHABLE_KEY` | your anon/publishable key |
+| `VITE_APP_URL` | `https://living-ai-garden.r-rababzahra888.workers.dev` |
 
-After changing **build** variables, trigger a new deploy with a fresh build. After changing **runtime** variables, saving in the dashboard is enough (no rebuild required).
+**3. Deploy settings** — Build command: `npm run build`, Deploy command: `npx nitro deploy --prebuilt`.
+
+The repo’s [`wrangler.toml`](wrangler.toml) sets `keep_vars = true` so git deploys **do not wipe** secrets you already set in the dashboard or via `cf:secrets`.
+
+> Do **not** rely on the “paste .env on Deploy” dialog for every push — that’s for one-off deploys. Use **Variables and secrets** or `npm run cf:secrets` once instead.
+
+### Optional: auto-sync secrets on every git deploy
+
+If you prefer secrets to refresh from CI on each deploy, add these as **encrypted** Build variables in Cloudflare (same names as runtime), then change **Deploy command** to:
+
+```bash
+npm run cf:secrets:ci && npx nitro deploy --prebuilt
+```
+
+Still set the three `VITE_*` build variables above for the browser bundle.
+
+### When keys change
+
+- **Runtime** (chat / SSR): run `npm run cf:secrets` again, or update **Variables and secrets** in the dashboard.
+- **Browser** (`VITE_*`): update Build variables and trigger a new build.
 
 Connect the repo to Cloudflare Workers Builds (or push to the connected branch) so pushes to `main` deploy automatically.
 

@@ -1,0 +1,16 @@
+# Cloudflare Worker config (merged into Nitro's generated deploy config).
+# Secrets (OPENAI_API_KEY, GROQ_API_KEY, GEMINI_API_KEY) are NOT listed here —
+# set them once via: npm run cf:secrets
+#
+# keep_vars = true → dashboard secrets/vars are NOT wiped on git deploys.
+
+name = "living-ai-garden"
+compatibility_date = "2026-07-05"
+compatibility_flags = ["nodejs_compat"]
+keep_vars = true
+
+# Public Supabase values only (same as VITE_* in the browser bundle).
+# Replace with your project or override in Cloudflare dashboard → Variables.
+[vars]
+# SUPABASE_URL = "https://your-project.supabase.co"
+# SUPABASE_PUBLISHABLE_KEY = "your_anon_key"
