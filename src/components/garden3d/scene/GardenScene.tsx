@@ -1,10 +1,12 @@
 import { useMemo } from "react";
 import { ContactShadows, Environment } from "@react-three/drei";
+import { visualsFromEnergy } from "@/lib/garden-energy";
 import { SkyAtmosphere } from "./SkyAtmosphere";
 import { TerrainLandscape, TerrainDetails } from "./TerrainLandscape";
 import { PondWater } from "./PondWater";
 import { GrassField } from "./GrassField";
 import { StylizedTrees } from "./StylizedTrees";
+import { GardenHuts } from "./GardenHuts";
 import { ConversationFlowers } from "./ConversationFlowers";
 import { ButterflySwarm } from "./ButterflySwarm";
 import { Gardener3D } from "./Gardener3D";
@@ -22,6 +24,7 @@ export function GardenScene({
   onGardenerClick,
   onFlowerClick,
   nightMode,
+  energy = 0,
 }: {
   mode: GardenMode;
   seeds: SeedVisual[];
@@ -30,10 +33,16 @@ export function GardenScene({
   onGardenerClick?: () => void;
   onFlowerClick?: (threadId: string) => void;
   nightMode: boolean;
+  energy?: number;
 }) {
+  const visuals = useMemo(() => visualsFromEnergy(energy), [energy]);
+  const activeSeeds = useMemo(
+    () => seeds.filter((s) => s.thread_id && !s.deleted_at),
+    [seeds],
+  );
   const weather = useMemo(
-    () => inferGardenWeather(seeds, threadTitles, latestThreadId),
-    [seeds, threadTitles, latestThreadId],
+    () => inferGardenWeather(activeSeeds, threadTitles, latestThreadId),
+    [activeSeeds, threadTitles, latestThreadId],
   );
   const timeOfDay = nightMode ? "night" : mode === "landing" ? "golden" : "morning";
 
@@ -47,10 +56,11 @@ export function GardenScene({
       <TerrainDetails />
       <GrassField />
       <PondWater />
-      <StylizedTrees />
+      <StylizedTrees count={visuals.trees} />
+      <GardenHuts count={visuals.huts} />
 
       <ConversationFlowers seeds={seeds} threadTitles={threadTitles} onFlowerClick={onFlowerClick} />
-      <ButterflySwarm />
+      <ButterflySwarm count={visuals.butterflies} />
       <GardenWeatherEffects weather={weather} />
 
       <Gardener3D onClick={onGardenerClick} />

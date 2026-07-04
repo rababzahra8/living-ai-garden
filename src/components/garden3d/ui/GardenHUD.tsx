@@ -55,20 +55,12 @@ export function GardenHUD({ stats, weather = "clear" }: { stats: GardenStats; we
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
         <AnimatedStat label="Garden Level" value={stats.level} icon="🌱" />
         <AnimatedStat label="Flowers" value={stats.flowers} icon="🌸" />
+        <AnimatedStat label="Memories" value={stats.memories} icon="🪨" />
         <AnimatedStat label="Butterflies" value={stats.butterflies} icon="🦋" />
         <AnimatedStat label="Trees" value={stats.trees} icon="🌳" />
+        <AnimatedStat label="Huts" value={stats.huts} icon="🏡" />
         <AnimatedStat label="Energy" value={stats.energy} icon="✨" />
       </div>
     </div>
   );
-}
-
-export function computeGardenStats(flowerCount: number): GardenStats {
-  return {
-    level: Math.max(1, Math.floor(flowerCount / 2) + 1),
-    flowers: flowerCount,
-    butterflies: 12,
-    trees: 5,
-    energy: Math.min(100, 20 + flowerCount * 12),
-  };
 }

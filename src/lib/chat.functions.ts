@@ -8,6 +8,7 @@ import {
   gardenerEmotionGuide,
   resolveConversationMood,
 } from "@/lib/garden-emotions";
+import { allocateConversationNumber, grantMessageEnergy } from "@/lib/garden-energy.server";
 
 const SYSTEM_PROMPT = `You are the Gardener — a warm, patient, and quietly wise guide who tends a small living garden that grows alongside your conversations with the visitor.
 
@@ -122,6 +123,8 @@ export const sendGardenerMessage = createServerFn({ method: "POST" })
 
     let growth = existingSeed?.growth ?? 0;
 
+    const isNewFlower = !existingSeed;
+
     if (existingSeed) {
       growth = Math.min(MAX_GROWTH, existingSeed.growth + growthBump);
       await supabase
@@ -134,6 +137,7 @@ export const sendGardenerMessage = createServerFn({ method: "POST" })
         })
         .eq("id", existingSeed.id);
     } else {
+      const conversationNumber = await allocateConversationNumber(supabase, userId);
       const angle = Math.random() * Math.PI * 2;
       const dist = 20 + Math.random() * 30;
       const x = 50 + Math.cos(angle) * dist * 0.4;
@@ -142,6 +146,7 @@ export const sendGardenerMessage = createServerFn({ method: "POST" })
       await supabase.from("seeds").insert({
         user_id: userId,
         thread_id: data.threadId,
+        conversation_number: conversationNumber,
         x,
         y,
         hue,
@@ -150,7 +155,9 @@ export const sendGardenerMessage = createServerFn({ method: "POST" })
       });
     }
 
-    return { reply, watered, growth, mood, emotion: llmEmotion?.emotion ?? mood };
+    const energy = await grantMessageEnergy(supabase, userId, { isNewFlower, watered });
+
+    return { reply, watered, growth, mood, emotion: llmEmotion?.emotion ?? mood, energy };
   });
 
 // -------- Create a new conversation thread --------
@@ -178,7 +185,7 @@ export const createThread = createServerFn({ method: "POST" })
     return { id: data.id };
   });
 
-// -------- Delete a conversation and its flower --------
+// -------- Delete a conversation — flower becomes a numbered memory; energy stays --------
 
 export const deleteThread = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -194,10 +201,33 @@ export const deleteThread = createServerFn({ method: "POST" })
       .maybeSingle();
     if (findErr || !thread) throw new Error("Conversation not found");
 
-    await supabase.from("seeds").delete().eq("thread_id", data.threadId).eq("user_id", userId);
+    const { data: seed } = await supabase
+      .from("seeds")
+      .select("id, conversation_number")
+      .eq("thread_id", data.threadId)
+      .eq("user_id", userId)
+      .maybeSingle();
+
+    if (seed) {
+      let conversationNumber = seed.conversation_number;
+      if (conversationNumber == null) {
+        conversationNumber = await allocateConversationNumber(supabase, userId);
+      }
+      await supabase
+        .from("seeds")
+        .update({
+          deleted_at: new Date().toISOString(),
+          thread_id: null,
+          conversation_number: conversationNumber,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", seed.id);
+    }
+
+    await supabase.from("messages").delete().eq("thread_id", data.threadId).eq("user_id", userId);
 
     const { error } = await supabase.from("threads").delete().eq("id", data.threadId).eq("user_id", userId);
     if (error) throw error;
 
-    return { ok: true };
+    return { ok: true, conversationNumber: seed?.conversation_number ?? null };
   });

@@ -14,13 +14,15 @@ import {
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { GardenHUD, computeGardenStats } from "./GardenHUD";
+import { GardenHUD } from "./GardenHUD";
+import { computeGardenStats } from "@/lib/garden-energy";
 import type { GardenWeather } from "@/lib/garden3d/garden-weather";
 
 type ThreadRow = { id: string; title: string; updated_at: string };
 
 export function GardenChrome({
-  seedsCount,
+  energy,
+  seeds,
   weather = "clear",
   threads,
   threadsOpen,
@@ -32,7 +34,8 @@ export function GardenChrome({
   chatPending,
   deletePending,
 }: {
-  seedsCount: number;
+  energy: number;
+  seeds: { thread_id: string | null; deleted_at?: string | null }[];
   weather?: GardenWeather;
   threads: ThreadRow[];
   threadsOpen: boolean;
@@ -44,7 +47,7 @@ export function GardenChrome({
   chatPending: boolean;
   deletePending?: boolean;
 }) {
-  const stats = computeGardenStats(seedsCount);
+  const stats = computeGardenStats(energy, seeds);
 
   return (
     <>
@@ -100,7 +103,9 @@ export function GardenChrome({
                           <AlertDialogHeader>
                             <AlertDialogTitle>Remove this conversation?</AlertDialogTitle>
                             <AlertDialogDescription>
-                              Its flower will wilt and disappear from your garden. This cannot be undone.
+                              The chat will be removed, but its flower stays in the garden as a numbered
+                              memory. Your garden energy is kept — trees, butterflies, and huts do not
+                              disappear.
                             </AlertDialogDescription>
                           </AlertDialogHeader>
                           <AlertDialogFooter>

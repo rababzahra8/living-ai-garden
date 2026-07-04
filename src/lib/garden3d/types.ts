@@ -6,6 +6,8 @@ export type SeedVisual = {
   hue: number;
   growth: number;
   species: string;
+  conversation_number: number;
+  deleted_at?: string | null;
 };
 
 export type GardenMode = "landing" | "garden";
@@ -27,8 +29,10 @@ export type TimeOfDay = "morning" | "golden" | "sunset" | "night";
 
 export type GardenStats = {
   flowers: number;
+  memories: number;
   butterflies: number;
   trees: number;
+  huts: number;
   energy: number;
   level: number;
 };

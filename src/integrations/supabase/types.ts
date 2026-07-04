@@ -51,7 +51,9 @@ export type Database = {
       }
       seeds: {
         Row: {
+          conversation_number: number
           created_at: string
+          deleted_at: string | null
           growth: number
           hue: number
           id: string
@@ -63,7 +65,9 @@ export type Database = {
           y: number
         }
         Insert: {
+          conversation_number: number
           created_at?: string
+          deleted_at?: string | null
           growth?: number
           hue?: number
           id?: string
@@ -75,7 +79,9 @@ export type Database = {
           y: number
         }
         Update: {
+          conversation_number?: number
           created_at?: string
+          deleted_at?: string | null
           growth?: number
           hue?: number
           id?: string
@@ -115,6 +121,27 @@ export type Database = {
           created_at?: string
           id?: string
           title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_garden: {
+        Row: {
+          energy: number
+          next_conversation_number: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          energy?: number
+          next_conversation_number?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          energy?: number
+          next_conversation_number?: number
           updated_at?: string
           user_id?: string
         }

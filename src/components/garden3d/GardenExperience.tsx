@@ -12,6 +12,7 @@ export type GardenExperienceProps = {
   onGardenerClick?: () => void;
   onFlowerClick?: (threadId: string) => void;
   nightMode?: boolean;
+  energy?: number;
 };
 
 export default function GardenExperience({
@@ -22,6 +23,7 @@ export default function GardenExperience({
   onGardenerClick,
   onFlowerClick,
   nightMode = false,
+  energy = 0,
 }: GardenExperienceProps) {
   return (
     <>
@@ -41,6 +43,7 @@ export default function GardenExperience({
             onGardenerClick={onGardenerClick}
             onFlowerClick={onFlowerClick}
             nightMode={nightMode}
+            energy={energy}
           />
         </Suspense>
       </Canvas>

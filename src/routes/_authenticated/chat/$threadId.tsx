@@ -112,6 +112,7 @@ function ChatPage() {
       qc.invalidateQueries({ queryKey: ["seeds"] });
       qc.invalidateQueries({ queryKey: ["threads"] });
       qc.invalidateQueries({ queryKey: ["seed", threadId] });
+      qc.invalidateQueries({ queryKey: ["garden-energy"] });
       requestAnimationFrame(() => inputRef.current?.focus());
     },
   });
@@ -121,7 +122,8 @@ function ChatPage() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["threads"] });
       qc.invalidateQueries({ queryKey: ["seeds"] });
-      toast.success("Conversation removed from the garden");
+      qc.invalidateQueries({ queryKey: ["garden-energy"] });
+      toast.success("Conversation archived — flower kept as a numbered memory");
       navigate({ to: "/garden" });
     },
     onError: (e) => toast.error(e instanceof Error ? e.message : "Could not delete"),
@@ -191,7 +193,8 @@ function ChatPage() {
               <AlertDialogHeader>
                 <AlertDialogTitle>Remove this conversation?</AlertDialogTitle>
                 <AlertDialogDescription>
-                  Its flower will wilt and disappear from your garden. This cannot be undone.
+                  The chat will be removed, but its flower stays as a numbered memory in your garden.
+                  Your energy is kept.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>

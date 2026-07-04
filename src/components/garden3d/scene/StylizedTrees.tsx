@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import { terrainHeight } from "@/lib/garden3d/math";
@@ -88,7 +88,9 @@ function TreeMesh({
   );
 }
 
-const TREE_LAYOUT: { kind: TreeKind; x: number; z: number; scale: number }[] = [
+const TREE_KINDS: TreeKind[] = ["cherry", "oak", "willow", "pine", "magic"];
+
+const BASE_LAYOUT: { kind: TreeKind; x: number; z: number; scale: number }[] = [
   { kind: "cherry", x: -14, z: -2, scale: 1.15 },
   { kind: "oak", x: 14, z: -4, scale: 1.35 },
   { kind: "willow", x: 10, z: 6, scale: 1.05 },
@@ -96,11 +98,33 @@ const TREE_LAYOUT: { kind: TreeKind; x: number; z: number; scale: number }[] = [
   { kind: "magic", x: 0, z: -10, scale: 1.2 },
 ];
 
-export function StylizedTrees() {
+function extraTreeLayout(count: number) {
+  const extras: typeof BASE_LAYOUT = [];
+  for (let i = BASE_LAYOUT.length; i < count; i++) {
+    const t = i - BASE_LAYOUT.length;
+    const angle = t * 1.35 + 0.4;
+    const r = 15 + (t % 4) * 2.5;
+    extras.push({
+      kind: TREE_KINDS[i % TREE_KINDS.length],
+      x: Math.cos(angle) * r,
+      z: Math.sin(angle) * r * 0.85 - 1,
+      scale: 0.82 + (t % 3) * 0.1,
+    });
+  }
+  return extras;
+}
+
+export function StylizedTrees({ count = 5 }: { count?: number }) {
+  const layout = useMemo(() => {
+    const base = BASE_LAYOUT.slice(0, Math.min(count, BASE_LAYOUT.length));
+    const extras = count > BASE_LAYOUT.length ? extraTreeLayout(count) : [];
+    return [...base, ...extras];
+  }, [count]);
+
   return (
     <group>
-      {TREE_LAYOUT.map(({ kind, x, z, scale }) => (
-        <TreeMesh key={`${kind}-${x}`} kind={kind} position={[x, terrainHeight(x, z), z]} scale={scale} />
+      {layout.map(({ kind, x, z, scale }) => (
+        <TreeMesh key={`${kind}-${x}-${z}`} kind={kind} position={[x, terrainHeight(x, z), z]} scale={scale} />
       ))}
     </group>
   );

@@ -19,6 +19,8 @@ type SeedRow = {
   hue: number;
   growth: number;
   species: string;
+  conversation_number: number;
+  deleted_at: string | null;
 };
 
 type ThreadRow = { id: string; title: string; updated_at: string };
@@ -40,10 +42,28 @@ function GardenPage() {
     queryFn: async (): Promise<SeedRow[]> => {
       const { data, error } = await supabase
         .from("seeds")
-        .select("id, thread_id, x, y, hue, growth, species")
+        .select("id, thread_id, x, y, hue, growth, species, conversation_number, deleted_at")
         .order("created_at", { ascending: true });
       if (error) throw error;
       return data as SeedRow[];
+    },
+    retry: 1,
+  });
+
+  const energyQ = useQuery({
+    queryKey: ["garden-energy"],
+    queryFn: async (): Promise<number> => {
+      const { data: session } = await supabase.auth.getSession();
+      const userId = session.session?.user.id;
+      if (!userId) return 0;
+
+      const { data, error } = await supabase
+        .from("user_garden")
+        .select("energy")
+        .eq("user_id", userId)
+        .maybeSingle();
+      if (error) throw error;
+      return data?.energy ?? 0;
     },
     retry: 1,
   });
@@ -62,9 +82,9 @@ function GardenPage() {
   });
 
   useEffect(() => {
-    const err = seedsQ.error ?? threadsQ.error;
+    const err = seedsQ.error ?? threadsQ.error ?? energyQ.error;
     if (err) toast.error(err instanceof Error ? err.message : "Could not load garden data");
-  }, [seedsQ.error, threadsQ.error]);
+  }, [seedsQ.error, threadsQ.error, energyQ.error]);
 
   const threadTitles = useMemo(() => {
     const map: Record<string, string> = {};
@@ -86,7 +106,8 @@ function GardenPage() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["threads"] });
       qc.invalidateQueries({ queryKey: ["seeds"] });
-      toast.success("Conversation removed from the garden");
+      qc.invalidateQueries({ queryKey: ["garden-energy"] });
+      toast.success("Conversation archived as a numbered memory — your energy remains");
     },
     onError: (e) => toast.error(e instanceof Error ? e.message : "Could not delete"),
   });
@@ -104,9 +125,11 @@ function GardenPage() {
   };
 
   const seeds = seedsQ.data ?? [];
+  const energy = energyQ.data ?? 0;
+  const activeSeeds = useMemo(() => seeds.filter((s) => s.thread_id && !s.deleted_at), [seeds]);
   const weather = useMemo(
-    () => inferGardenWeather(seeds, threadTitles, threadsQ.data?.[0]?.id ?? null),
-    [seeds, threadTitles, threadsQ.data],
+    () => inferGardenWeather(activeSeeds, threadTitles, threadsQ.data?.[0]?.id ?? null),
+    [activeSeeds, threadTitles, threadsQ.data],
   );
 
   return (
@@ -117,12 +140,14 @@ function GardenPage() {
         threadTitles={threadTitles}
         latestThreadId={threadsQ.data?.[0]?.id ?? null}
         nightMode={theme === "dark"}
+        energy={energy}
         onGardenerClick={() => startChat.mutate()}
         onFlowerClick={goToThread}
       />
 
       <GardenChrome
-        seedsCount={seeds.length}
+        energy={energy}
+        seeds={seeds}
         weather={weather}
         threads={threadsQ.data ?? []}
         threadsOpen={threadsOpen}

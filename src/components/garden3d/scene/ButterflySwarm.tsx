@@ -90,10 +90,10 @@ function Butterfly3D({ spec }: { spec: ButterflySpec }) {
   );
 }
 
-export function ButterflySwarm() {
+export function ButterflySwarm({ count = 12 }: { count?: number }) {
   const specs = useMemo(
     (): ButterflySpec[] =>
-      Array.from({ length: COUNT }, (_, i) => ({
+      Array.from({ length: count }, (_, i) => ({
         phase: Math.random() * Math.PI * 2,
         speed: 0.22 + Math.random() * 0.28,
         radius: 4 + Math.random() * 7,
@@ -102,7 +102,7 @@ export function ButterflySwarm() {
         scale: 0.45 + Math.random() * 0.25,
         colors: PALETTE[i % PALETTE.length],
       })),
-    [],
+    [count],
   );
 
   return (

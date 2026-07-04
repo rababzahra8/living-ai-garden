@@ -1,6 +1,6 @@
 import { useMemo, useRef, useState } from "react";
 import { useFrame } from "@react-three/fiber";
-import { Float, Sparkles } from "@react-three/drei";
+import { Float, Html, Sparkles } from "@react-three/drei";
 import * as THREE from "three";
 import type { SeedVisual } from "@/lib/garden3d/types";
 import { inferFlowerFromChat, parseStoredSpecies } from "@/lib/flower-mood";
@@ -389,10 +389,42 @@ function resolveVisual(seed: SeedVisual, context: string): ToneVisual {
 
 function SingleFlower({ seed, context, onClick }: { seed: SeedVisual; context: string; onClick?: () => void }) {
   const [hovered, setHovered] = useState(false);
+  const isMemory = seed.deleted_at != null;
   const visual = useMemo(() => resolveVisual(seed, context), [seed, context]);
   const hash = hashString(seed.id);
   const [x, y, z] = seedToWorld(seed.x, seed.y);
-  const glow = hslToHex(visual.hue, visual.saturation, visual.lightness);
+  const glow = hslToHex(visual.hue, isMemory ? 12 : visual.saturation, isMemory ? 42 : visual.lightness);
+
+  if (isMemory) {
+    return (
+      <Float speed={0.35} rotationIntensity={0.008} floatIntensity={0.02}>
+        <group position={[x, y, z]} scale={FLOWER_SCALE * 0.82}>
+          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.02, 0]}>
+            <ringGeometry args={[0.1, 0.18, 32]} />
+            <meshBasicMaterial color="#94a3b8" transparent opacity={0.35} />
+          </mesh>
+          <group rotation={[0.15, 0, 0.12]}>
+            <FlowerStem visual={{ ...visual, tone: "sad" }} height={0.62} />
+            <group position={[0, 0.68, 0]} scale={0.55}>
+              <mesh>
+                <sphereGeometry args={[0.14, 8, 8]} />
+                <meshStandardMaterial color="#64748b" roughness={0.95} />
+              </mesh>
+            </group>
+          </group>
+          <Html center position={[0, 1.35, 0]} distanceFactor={10} style={{ pointerEvents: "none" }}>
+            <div
+              className="rounded-full border border-white/25 bg-slate-900/75 px-2.5 py-1 text-center shadow-lg backdrop-blur-sm"
+              title="This conversation was removed — the memory remains, but the chat is not accessible yet."
+            >
+              <div className="text-[10px] font-medium uppercase tracking-wider text-white/50">Memory</div>
+              <div className="text-sm font-bold tabular-nums text-white/90">#{seed.conversation_number}</div>
+            </div>
+          </Html>
+        </group>
+      </Float>
+    );
+  }
 
   return (
     <Float speed={visual.tone === "sad" ? 0.6 : 1} rotationIntensity={0.012} floatIntensity={0.04}>
