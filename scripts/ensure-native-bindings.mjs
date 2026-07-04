@@ -20,15 +20,21 @@ const NESTED_LINUX_BINDINGS = [
   "lightningcss-linux-x64-musl@1.32.0",
 ];
 
+const npmInstallFlags = "--include=optional --no-audit --no-fund --ignore-scripts";
+
 function verifyNativeModules() {
   for (const name of REQUIRED_MODULES) {
-    try {
-      require.resolve(name);
-      require(name);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      throw new Error(`Native module check failed for "${name}": ${message}`);
-    }
+    require.resolve(name);
+    require(name);
+  }
+}
+
+function canLoadNativeModules() {
+  try {
+    verifyNativeModules();
+    return true;
+  } catch {
+    return false;
   }
 }
 
@@ -36,14 +42,17 @@ function verifyNativeModules() {
 export function ensureNativeBindings() {
   if (platform() !== "linux" || arch() !== "x64") return;
 
-  console.log("[ensure-native-bindings] Reinstalling Linux optional native modules...");
+  if (canLoadNativeModules()) {
+    console.log("[ensure-native-bindings] Native bindings already present");
+    return;
+  }
 
-  execSync("npm install --include=optional --no-audit --no-fund", {
-    stdio: "inherit",
-  });
+  console.log("[ensure-native-bindings] Installing Linux optional native modules...");
+
+  execSync(`npm install ${npmInstallFlags}`, { stdio: "inherit" });
 
   execSync(
-    `npm install --no-save --include=optional ${NESTED_LINUX_BINDINGS.join(" ")}`,
+    `npm install --no-save ${npmInstallFlags} ${NESTED_LINUX_BINDINGS.join(" ")}`,
     { stdio: "inherit" },
   );
 

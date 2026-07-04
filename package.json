@@ -7,7 +7,6 @@
     "dev": "vite dev",
     "build": "node scripts/ensure-native-bindings.mjs && vite build",
     "build:dev": "node scripts/ensure-native-bindings.mjs && vite build --mode development",
-    "postinstall": "node scripts/ensure-native-bindings.mjs",
     "verify:ci": "npm ci --progress=false && npm run build",
     "preview": "vite preview",
     "lint": "eslint .",
