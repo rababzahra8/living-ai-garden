@@ -38,7 +38,6 @@ export default defineConfig(({ mode, command }) => {
 
   return {
     define: envDefine,
-    css: { transformer: "lightningcss" },
     resolve: {
       alias: { "@": `${process.cwd()}/src` },
       dedupe: [
