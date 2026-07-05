@@ -3,6 +3,7 @@ import { Canvas } from "@react-three/fiber";
 import { Loader } from "@react-three/drei";
 import { GardenScene } from "./scene/GardenScene";
 import type { GardenWeather } from "@/lib/garden3d/garden-weather";
+import type { HutPlacement, TreePlacement } from "@/lib/garden3d/scenery-layout";
 import type { GardenMode, SeedVisual } from "@/lib/garden3d/types";
 
 export type GardenExperienceProps = {
@@ -12,6 +13,13 @@ export type GardenExperienceProps = {
   latestThreadId?: string | null;
   onGardenerClick?: () => void;
   onFlowerClick?: (threadId: string) => void;
+  arrangeMode?: boolean;
+  onMoveSeed?: (seedId: string, x: number, y: number) => void;
+  onDragEnd?: (seedId: string, x: number, y: number) => void;
+  trees?: TreePlacement[];
+  huts?: HutPlacement[];
+  onMoveScenery?: (id: string, x: number, z: number) => void;
+  onDragEndScenery?: (id: string, x: number, z: number) => void;
   nightMode?: boolean;
   energy?: number;
   weather?: GardenWeather;
@@ -25,6 +33,13 @@ export default function GardenExperience({
   latestThreadId = null,
   onGardenerClick,
   onFlowerClick,
+  arrangeMode = false,
+  onMoveSeed,
+  onDragEnd,
+  trees,
+  huts,
+  onMoveScenery,
+  onDragEndScenery,
   nightMode = false,
   energy = 0,
   weather,
@@ -34,7 +49,7 @@ export default function GardenExperience({
     <>
       <Canvas
         shadows={mode !== "landing"}
-        dpr={mode === "landing" ? [1, 1.15] : [1, 1.75]}
+        dpr={mode === "landing" ? [1, 1.15] : nightMode ? [1, 1.35] : [1, 1.65]}
         camera={{ position: [0, 5.5, 13], fov: 42, near: 0.1, far: 120 }}
         gl={{ antialias: true, powerPreference: "high-performance" }}
         className="absolute inset-0 touch-none"
@@ -47,6 +62,13 @@ export default function GardenExperience({
             latestThreadId={latestThreadId}
             onGardenerClick={onGardenerClick}
             onFlowerClick={onFlowerClick}
+            arrangeMode={arrangeMode}
+            onMoveSeed={onMoveSeed}
+            onDragEnd={onDragEnd}
+            trees={trees}
+            huts={huts}
+            onMoveScenery={onMoveScenery}
+            onDragEndScenery={onDragEndScenery}
             nightMode={nightMode}
             energy={energy}
             weather={weather}

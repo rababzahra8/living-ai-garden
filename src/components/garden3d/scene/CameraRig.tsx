@@ -8,9 +8,13 @@ import type { SeedVisual } from "@/lib/garden3d/types";
 export function CameraRig({
   mode,
   seeds = [],
+  arrangeMode = false,
+  sceneDragging = false,
 }: {
   mode: "landing" | "garden";
   seeds?: SeedVisual[];
+  arrangeMode?: boolean;
+  sceneDragging?: boolean;
 }) {
   const controlsRef = useRef<OrbitControlsImpl>(null);
   const { camera } = useThree();
@@ -36,16 +40,19 @@ export function CameraRig({
     <OrbitControls
       ref={controlsRef}
       makeDefault
+      enabled={!sceneDragging}
+      enableRotate={!arrangeMode && !sceneDragging}
+      enablePan={!sceneDragging}
       enableDamping
-      dampingFactor={0.06}
+      dampingFactor={0.085}
       minDistance={3.5}
       maxDistance={28}
       maxPolarAngle={Math.PI / 2.05}
       minPolarAngle={0.2}
       enablePan
-      panSpeed={0.7}
-      rotateSpeed={0.55}
-      zoomSpeed={0.85}
+      panSpeed={0.65}
+      rotateSpeed={0.5}
+      zoomSpeed={0.8}
       target={[0, 1.5, 3]}
     />
   );

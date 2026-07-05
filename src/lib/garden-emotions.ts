@@ -2,7 +2,7 @@ import { z } from "zod";
 import type { FlowerMood, FlowerSpecies } from "@/lib/flower-mood";
 import { inferFlowerFromConversation } from "@/lib/flower-mood";
 import { chatCompleteJson } from "@/lib/llm-providers";
-import type { GardenWeather } from "@/lib/garden3d/garden-weather";
+import type { MoodBoost } from "@/lib/garden3d/garden-weather";
 
 export type CatalogWeather =
   | "rainbow"
@@ -49,7 +49,7 @@ export const GARDEN_EMOTION_CATALOG = [
   { id: "jealous", flower: "greenChrysanthemum" as FlowerSpecies, hue: 105, weather: "storm" as CatalogWeather, label: "Jealous → Green Chrysanthemum" },
   { id: "bitter", flower: "thistle" as FlowerSpecies, hue: 255, weather: "fog" as CatalogWeather, label: "Bitter → Thistle" },
   { id: "resentful", flower: "blackRose" as FlowerSpecies, hue: 345, weather: "storm" as CatalogWeather, label: "Resentful → Black Rose" },
-  { id: "spiteful", flower: "blackDahlia" as FlowerSpecies, hue: 355, weather: "thunder" as CatalogWeather, label: "Spiteful → Black Dahlia" },
+  { id: "spiteful", flower: "blackDahlia" as FlowerSpecies, hue: 355, weather: "storm" as CatalogWeather, label: "Spiteful → Black Dahlia" },
   { id: "annoyed", flower: "snapdragon" as FlowerSpecies, hue: 20, weather: "windy" as CatalogWeather, label: "Annoyed → Snapdragon" },
   { id: "unimpressed", flower: "reedGrass" as FlowerSpecies, hue: 290, weather: "cloudy" as CatalogWeather, label: "Unimpressed → Reed Grass" },
   { id: "suspicious", flower: "nightJasmine" as FlowerSpecies, hue: 185, weather: "fog" as CatalogWeather, label: "Suspicious → Night Jasmine" },
@@ -76,11 +76,11 @@ Weight the LATEST user message most heavily. Return JSON only:
 {"emotion":"<one of the ids above>","confidence":0.0-1.0}`;
 }
 
-export function gardenWeatherFromEmotion(emotionId: string): GardenWeather {
+export function gardenWeatherFromEmotion(emotionId: string): MoodBoost {
   const entry = GARDEN_EMOTION_CATALOG.find((e) => e.id === emotionId);
   if (!entry) return "clear";
   if (entry.weather === "rainbow" || entry.weather === "sunrise" || entry.weather === "breeze") {
-    return "rainbow";
+    return "spring";
   }
   if (
     entry.weather === "rain" ||

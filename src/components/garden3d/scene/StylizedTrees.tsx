@@ -1,24 +1,26 @@
 import { useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
+import { useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import { terrainHeight } from "@/lib/garden3d/math";
-
-type TreeKind = "cherry" | "oak" | "willow" | "pine" | "magic";
+import type { TreeKind, TreePlacement } from "@/lib/garden3d/scenery-layout";
+import { useTerrainDrag } from "./useTerrainDrag";
+import { TreeLanternGlow } from "./NightGlow";
 
 function TreeMesh({
   kind,
-  position,
   scale = 1,
+  nightMode = false,
 }: {
   kind: TreeKind;
-  position: [number, number, number];
   scale?: number;
+  nightMode?: boolean;
 }) {
   const canopy = useRef<THREE.Group>(null);
 
   useFrame(({ clock }) => {
     if (!canopy.current) return;
-    canopy.current.rotation.z = Math.sin(clock.elapsedTime * 0.5 + position[0]) * 0.02;
+    canopy.current.rotation.z = Math.sin(clock.elapsedTime * 0.5) * 0.02;
   });
 
   const trunkColor = kind === "pine" ? "#4a3728" : "#5c4033";
@@ -34,7 +36,7 @@ function TreeMesh({
             : "#4f8f55";
 
   return (
-    <group position={position} scale={scale}>
+    <group scale={scale}>
       <mesh castShadow position={[0, 1.2, 0]}>
         <cylinderGeometry args={[0.18, 0.28, 2.4, 6]} />
         <meshStandardMaterial color={trunkColor} roughness={0.95} />
@@ -84,47 +86,96 @@ function TreeMesh({
             </mesh>
           ))}
       </group>
+      {nightMode && <TreeLanternGlow position={[0.55, 0.35, 0.4]} />}
     </group>
   );
 }
 
-const TREE_KINDS: TreeKind[] = ["cherry", "oak", "willow", "pine", "magic"];
+function DraggableTree({
+  tree,
+  arrangeMode,
+  isDragging,
+  onDragStart,
+  nightMode = false,
+}: {
+  tree: TreePlacement;
+  arrangeMode: boolean;
+  isDragging: boolean;
+  onDragStart: (clientX: number, clientY: number) => void;
+  nightMode?: boolean;
+}) {
+  const { gl } = useThree();
+  const y = terrainHeight(tree.x, tree.z);
 
-const BASE_LAYOUT: { kind: TreeKind; x: number; z: number; scale: number }[] = [
-  { kind: "cherry", x: -14, z: -2, scale: 1.15 },
-  { kind: "oak", x: 14, z: -4, scale: 1.35 },
-  { kind: "willow", x: 10, z: 6, scale: 1.05 },
-  { kind: "pine", x: -10, z: 8, scale: 0.95 },
-  { kind: "magic", x: 0, z: -10, scale: 1.2 },
-];
-
-function extraTreeLayout(count: number) {
-  const extras: typeof BASE_LAYOUT = [];
-  for (let i = BASE_LAYOUT.length; i < count; i++) {
-    const t = i - BASE_LAYOUT.length;
-    const angle = t * 1.35 + 0.4;
-    const r = 15 + (t % 4) * 2.5;
-    extras.push({
-      kind: TREE_KINDS[i % TREE_KINDS.length],
-      x: Math.cos(angle) * r,
-      z: Math.sin(angle) * r * 0.85 - 1,
-      scale: 0.82 + (t % 3) * 0.1,
-    });
-  }
-  return extras;
+  return (
+    <group position={[tree.x, y, tree.z]}>
+      <group
+        scale={isDragging ? 1.05 : 1}
+        onPointerDown={(e) => {
+          if (!arrangeMode) return;
+          e.stopPropagation();
+          onDragStart(e.clientX, e.clientY);
+          gl.domElement.setPointerCapture(e.pointerId);
+          document.body.style.cursor = "grabbing";
+        }}
+        onPointerUp={(e) => {
+          if (gl.domElement.hasPointerCapture(e.pointerId)) {
+            gl.domElement.releasePointerCapture(e.pointerId);
+          }
+          if (arrangeMode) document.body.style.cursor = "grab";
+        }}
+      >
+        {arrangeMode && (
+          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.05, 0]}>
+            <ringGeometry args={[1.2, 1.5, 32]} />
+            <meshBasicMaterial color="#a78bfa" transparent opacity={0.55} />
+          </mesh>
+        )}
+        <mesh visible={false} position={[0, 2, 0]}>
+          <cylinderGeometry args={[1.4, 1.4, 4.5, 8]} />
+          <meshBasicMaterial />
+        </mesh>
+        <TreeMesh kind={tree.kind} scale={tree.scale} nightMode={nightMode} />
+      </group>
+    </group>
+  );
 }
 
-export function StylizedTrees({ count = 5 }: { count?: number }) {
-  const layout = useMemo(() => {
-    const base = BASE_LAYOUT.slice(0, Math.min(count, BASE_LAYOUT.length));
-    const extras = count > BASE_LAYOUT.length ? extraTreeLayout(count) : [];
-    return [...base, ...extras];
-  }, [count]);
+export function StylizedTrees({
+  trees,
+  arrangeMode = false,
+  nightMode = false,
+  onMoveScenery,
+  onDragEndScenery,
+  onDragStateChange,
+}: {
+  trees: TreePlacement[];
+  arrangeMode?: boolean;
+  nightMode?: boolean;
+  onMoveScenery?: (id: string, x: number, z: number) => void;
+  onDragEndScenery?: (id: string, x: number, z: number) => void;
+  onDragStateChange?: (dragging: boolean) => void;
+}) {
+  const { dragId, startDrag } = useTerrainDrag({
+    enabled: arrangeMode,
+    onMove: onMoveScenery,
+    onEnd: onDragEndScenery,
+    onDragStateChange,
+  });
+
+  if (trees.length === 0) return null;
 
   return (
     <group>
-      {layout.map(({ kind, x, z, scale }) => (
-        <TreeMesh key={`${kind}-${x}-${z}`} kind={kind} position={[x, terrainHeight(x, z), z]} scale={scale} />
+      {trees.map((tree) => (
+        <DraggableTree
+          key={tree.id}
+          tree={tree}
+          arrangeMode={arrangeMode}
+          isDragging={dragId === tree.id}
+          nightMode={nightMode}
+          onDragStart={(cx, cy) => startDrag(tree.id, cx, cy, tree.x, tree.z)}
+        />
       ))}
     </group>
   );

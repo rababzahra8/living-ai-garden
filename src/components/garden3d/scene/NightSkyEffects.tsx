@@ -35,17 +35,17 @@ function NightSkyDome({ lite = false }: { lite?: boolean }) {
   );
 }
 
-function StarLayers({ lite = false }: { lite?: boolean }) {
-  if (lite) {
+function StarLayers({ lite = false, reduced = false }: { lite?: boolean; reduced?: boolean }) {
+  if (lite || reduced) {
     return (
-      <Stars radius={120} depth={70} count={2200} factor={4} saturation={0.3} fade speed={0.25} />
+      <Stars radius={120} depth={70} count={1800} factor={4} saturation={0.3} fade speed={0.25} />
     );
   }
   return (
     <>
-      <Stars radius={160} depth={90} count={9000} factor={3.2} saturation={0.2} fade speed={0.35} />
-      <Stars radius={90} depth={50} count={1500} factor={5.5} saturation={0.45} fade speed={0.18} />
-      <Stars radius={45} depth={25} count={500} factor={9} saturation={0.75} fade speed={0.08} />
+      <Stars radius={160} depth={90} count={5500} factor={3.2} saturation={0.2} fade speed={0.35} />
+      <Stars radius={90} depth={50} count={900} factor={5.5} saturation={0.45} fade speed={0.18} />
+      <Stars radius={45} depth={25} count={320} factor={9} saturation={0.75} fade speed={0.08} />
     </>
   );
 }
@@ -234,14 +234,14 @@ export function PhasedMoon({ lite = false }: { lite?: boolean }) {
   );
 }
 
-export function NightSkyEffects({ lite = false }: { lite?: boolean }) {
+export function NightSkyEffects({ lite = false, reduced = false }: { lite?: boolean; reduced?: boolean }) {
   return (
     <>
-      <NightSkyDome lite={lite} />
-      <StarLayers lite={lite} />
-      {!lite && <SkySparkles />}
-      <PhasedMoon lite={lite} />
-      {!lite && <ShootingStars pool={10} />}
+      <NightSkyDome lite={lite || reduced} />
+      <StarLayers lite={lite} reduced={reduced} />
+      {!lite && !reduced && <SkySparkles />}
+      <PhasedMoon lite={lite || reduced} />
+      {!lite && !reduced && <ShootingStars pool={6} />}
     </>
   );
 }

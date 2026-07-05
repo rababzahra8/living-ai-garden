@@ -3,13 +3,28 @@ import { gardenWeatherFromEmotion } from "@/lib/garden-emotions";
 import { toneFromMoodString, type ConvoTone } from "@/lib/garden3d/tone-visuals";
 import type { SeedVisual } from "@/lib/garden3d/types";
 
-export type GardenWeather = "clear" | "rainbow" | "rain";
+export type GardenWeather = "clear" | "rain" | "spring" | "summer" | "autumn" | "winter";
+
+/** Brief mood boost from chat (no visible rainbow arc). */
+export type MoodBoost = "clear" | "rain" | "spring";
 
 const POSITIVE: ConvoTone[] = ["happy", "joy", "love", "hope"];
 const SAD: ConvoTone[] = ["sad", "negative"];
 
-function weatherFromTone(tone: ConvoTone): GardenWeather | null {
-  if (POSITIVE.includes(tone)) return "rainbow";
+export const WEATHER_LABELS: Record<
+  GardenWeather,
+  { icon: string; label: string; hint?: string }
+> = {
+  clear: { icon: "🌤️", label: "Clear skies" },
+  spring: { icon: "🌸", label: "Spring bloom", hint: "Warm light from joyful chats" },
+  summer: { icon: "☀️", label: "Summer sun" },
+  autumn: { icon: "🍂", label: "Autumn breeze" },
+  winter: { icon: "❄️", label: "Winter chill" },
+  rain: { icon: "🌧️", label: "Gentle rain", hint: "Fades naturally over time" },
+};
+
+function moodFromTone(tone: ConvoTone): MoodBoost | null {
+  if (POSITIVE.includes(tone)) return "spring";
   if (SAD.includes(tone)) return "rain";
   return null;
 }
@@ -28,38 +43,43 @@ function toneForSeed(seed: SeedVisual, threadTitles: Record<string, string>): Co
   return storedTone;
 }
 
-function weatherForSeed(seed: SeedVisual, threadTitles: Record<string, string>): GardenWeather | null {
+function moodForSeed(seed: SeedVisual, threadTitles: Record<string, string>): MoodBoost | null {
   const { mood } = parseStoredSpecies(seed.species);
-  const fromCatalog = gardenWeatherFromEmotion(mood);
+  const fromCatalog = gardenMoodFromEmotion(mood);
   if (mood !== "neutral" && mood !== "reflection") {
     return fromCatalog;
   }
   const tone = toneForSeed(seed, threadTitles);
-  return weatherFromTone(tone);
+  return moodFromTone(tone);
 }
 
-/** Derive garden weather from conversation moods. Latest thread wins. */
-export function inferGardenWeather(
+function gardenMoodFromEmotion(emotionId: string): MoodBoost {
+  const wx = gardenWeatherFromEmotion(emotionId);
+  if (wx === "rain") return "rain";
+  if (wx === "spring") return "spring";
+  return "clear";
+}
+
+/** Derive brief mood weather from conversation. Latest thread wins. */
+export function inferGardenMood(
   seeds: SeedVisual[],
   threadTitles: Record<string, string>,
   latestThreadId?: string | null,
-): GardenWeather {
+): MoodBoost {
   if (seeds.length === 0) return "clear";
 
-  // Most recently updated conversation drives weather
   if (latestThreadId) {
     const latestSeed = seeds.find((s) => s.thread_id === latestThreadId);
     if (latestSeed) {
-      const wx = weatherForSeed(latestSeed, threadTitles);
-      if (wx) return wx;
+      const mood = moodForSeed(latestSeed, threadTitles);
+      if (mood) return mood;
     } else if (threadTitles[latestThreadId]) {
       const inferred = inferFlowerFromChat(threadTitles[latestThreadId], "");
-      const wx = weatherFromTone(toneFromMoodString(inferred.mood));
-      if (wx) return wx;
+      const mood = moodFromTone(toneFromMoodString(inferred.mood));
+      if (mood) return mood;
     }
   }
 
-  // Otherwise tally all flowers
   let positive = 0;
   let sad = 0;
   for (const seed of seeds) {
@@ -69,8 +89,17 @@ export function inferGardenWeather(
   }
 
   if (sad > positive) return "rain";
-  if (positive > sad) return "rainbow";
-  if (positive > 0 && sad === 0) return "rainbow";
+  if (positive > sad) return "spring";
+  if (positive > 0 && sad === 0) return "spring";
   if (sad > 0 && positive === 0) return "rain";
   return "clear";
+}
+
+/** @deprecated Use inferGardenMood */
+export function inferGardenWeather(
+  seeds: SeedVisual[],
+  threadTitles: Record<string, string>,
+  latestThreadId?: string | null,
+): MoodBoost {
+  return inferGardenMood(seeds, threadTitles, latestThreadId);
 }

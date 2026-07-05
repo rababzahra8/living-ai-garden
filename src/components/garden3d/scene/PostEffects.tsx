@@ -8,7 +8,7 @@ const bloomDay = (
   <Bloom intensity={0.25} luminanceThreshold={0.78} luminanceSmoothing={0.85} mipmapBlur />
 );
 const bloomNight = (
-  <Bloom intensity={0.85} luminanceThreshold={0.42} luminanceSmoothing={0.75} mipmapBlur />
+  <Bloom intensity={0.62} luminanceThreshold={0.48} luminanceSmoothing={0.78} mipmapBlur />
 );
 const bloomLiteDay = (
   <Bloom intensity={0.18} luminanceThreshold={0.82} luminanceSmoothing={0.9} mipmapBlur />
@@ -45,11 +45,11 @@ export function PostEffects({ nightMode, lite = false }: { nightMode: boolean; l
           <GodRays
             sun={moonLightRef as RefObject<THREE.Mesh>}
             blendFunction={BlendFunction.SCREEN}
-            samples={50}
-            density={0.94}
-            decay={0.92}
-            weight={0.35}
-            exposure={0.45}
+            samples={28}
+            density={0.92}
+            decay={0.93}
+            weight={0.28}
+            exposure={0.38}
             clampMax={1}
             kernelSize={KernelSize.SMALL}
             blur

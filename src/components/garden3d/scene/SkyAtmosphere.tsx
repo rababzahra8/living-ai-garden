@@ -2,8 +2,11 @@ import { useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import { Cloud, Sky } from "@react-three/drei";
 import { NightSkyEffects, DaySun } from "./NightSkyEffects";
+import { DistantMountains } from "./DistantMountains";
 import * as THREE from "three";
 import type { GardenWeather } from "@/lib/garden3d/garden-weather";
+import { isPrecipitation, skyBackground } from "@/lib/garden3d/weather-visuals";
+import { weatherAnim } from "@/lib/garden3d/weather-animation";
 
 function Pollen({ count = 120 }: { count?: number }) {
   const ref = useRef<THREE.Points>(null);
@@ -65,25 +68,6 @@ function Fireflies({ count = 40 }: { count?: number }) {
   );
 }
 
-function DistantMountains() {
-  return (
-    <group position={[0, -0.5, -28]}>
-      <mesh position={[-12, 2, 0]} rotation={[0, 0.2, 0]}>
-        <coneGeometry args={[14, 8, 4]} />
-        <meshStandardMaterial color="#7a9a8a" roughness={1} />
-      </mesh>
-      <mesh position={[8, 1.5, -2]} rotation={[0, -0.15, 0]}>
-        <coneGeometry args={[18, 10, 5]} />
-        <meshStandardMaterial color="#6b8f7d" roughness={1} />
-      </mesh>
-      <mesh position={[0, 1, 3]} rotation={[0, 0, 0]}>
-        <coneGeometry args={[22, 11, 6]} />
-        <meshStandardMaterial color="#5f8574" roughness={1} />
-      </mesh>
-    </group>
-  );
-}
-
 function DriftingClouds({
   weather,
   isNight,
@@ -97,21 +81,25 @@ function DriftingClouds({
 }) {
   const refs = useRef<(THREE.Group | null)[]>([]);
   const isRain = weather === "rain" && strength > 0.05;
-  const isRainbow = weather === "rainbow" && strength > 0.05;
+  const isWinter = weather === "winter" && strength > 0.05;
 
   const color = isNight
     ? isRain
       ? "#4a5568"
-      : isRainbow
-        ? "#6b7280"
-        : "#374151"
+      : "#374151"
     : isRain
       ? "#b0bccf"
-      : isRainbow
-        ? "#eef4ff"
-        : "#ffffff";
+      : isWinter
+        ? "#dce8f0"
+        : weather === "autumn"
+          ? "#e8ddd0"
+          : weather === "spring"
+            ? "#e8f4f0"
+            : "#ffffff";
 
-  const opacity = (isNight ? (isRain ? 0.55 : 0.28) : isRain ? 0.72 : isRainbow ? 0.58 : 0.52) * Math.max(strength, isNight ? 0.65 : 0.85);
+  const opacity =
+    (isNight ? (isRain ? 0.55 : 0.28) : isRain ? 0.78 : isWinter ? 0.45 : 0.52) *
+    Math.max(strength, isNight ? 0.65 : 0.85);
 
   const clouds = useMemo(() => {
     const specs: {
@@ -190,7 +178,6 @@ export function SkyAtmosphere({
 }) {
   const isNight = nightMode || timeOfDay === "night";
   const isRain = weather === "rain" && weatherStrength > 0.05;
-  const isRainbow = weather === "rainbow" && weatherStrength > 0.05;
   const sunPos = useMemo(() => {
     if (isNight) return [8, 4, -20] as [number, number, number];
     if (timeOfDay === "sunset") return [18, 3, -8] as [number, number, number];
@@ -198,9 +185,15 @@ export function SkyAtmosphere({
     return [10, 14, -4] as [number, number, number];
   }, [timeOfDay, isNight]);
 
-  const skyBg = isNight ? "#030712" : isRain ? "#9eb0c4" : isRainbow ? "#b8d8f0" : "#87ceeb";
+  const skyBg = skyBackground(weather, isNight);
   const fogNear = isNight ? 18 : 28;
   const fogFar = isNight ? 75 : 110;
+
+  useFrame(({ scene }) => {
+    if (scene.fog instanceof THREE.Fog) {
+      scene.fog.color.lerp(weatherAnim.skyColor, 0.06);
+    }
+  });
 
   return (
     <>
@@ -209,8 +202,8 @@ export function SkyAtmosphere({
           <Sky
             distance={450000}
             sunPosition={sunPos}
-            turbidity={isRain ? 6 : isRainbow ? 4 : 3}
-            rayleigh={isRain ? 1.2 : 2.5}
+            turbidity={isRain ? 6 : weather === "autumn" ? 5 : 3}
+            rayleigh={isRain ? 1.2 : weather === "winter" ? 1.8 : 2.5}
             mieCoefficient={0.004}
             mieDirectionalG={0.85}
           />
@@ -220,20 +213,20 @@ export function SkyAtmosphere({
       {isNight && (
         <>
           <color attach="background" args={["#030712"]} />
-          <NightSkyEffects lite={lite} />
+          <NightSkyEffects lite={lite} reduced={isNight && !lite} />
         </>
       )}
       <fog attach="fog" args={[skyBg, fogNear, fogFar]} />
-      <DistantMountains />
-      <DriftingClouds weather={weather} isNight={isNight} strength={weatherStrength} lite={lite} />
-      {!lite && !isNight && !isRain && <Pollen />}
+      <DistantMountains weather={weather} isNight={isNight} lite={lite} />
+      <DriftingClouds weather={weather} isNight={isNight} strength={weatherAnim.strength * weatherAnim.opacity} lite={lite} />
+      {!lite && !isNight && !isPrecipitation(weather) && <Pollen />}
       {!lite && isNight && <Fireflies />}
-      <ambientLight intensity={isNight ? 0.12 : isRain ? 0.32 : isRainbow ? 0.45 : 0.38} color={isNight ? "#9eb8ff" : isRain ? "#c8d4e8" : "#fff5e6"} />
+      <ambientLight intensity={isNight ? 0.12 : isRain ? 0.32 : 0.38} color={isNight ? "#9eb8ff" : isRain ? "#c8d4e8" : "#fff5e6"} />
       <directionalLight
         castShadow={!isNight && !lite}
         position={isNight ? [15, 28, -30] : sunPos}
-        intensity={isNight ? 0.18 : isRain ? 0.6 : isRainbow ? 1.0 : 1.15}
-        color={isNight ? "#c8d8ff" : timeOfDay === "sunset" ? "#ffb07c" : "#fff4dd"}
+        intensity={isNight ? 0.18 : isRain ? 0.6 : weather === "summer" ? 1.25 : 1.1}
+        color={isNight ? "#c8d8ff" : timeOfDay === "sunset" ? "#ffb07c" : weather === "autumn" ? "#ffd4a8" : "#fff4dd"}
         shadow-mapSize={lite ? [512, 512] : [2048, 2048]}
         shadow-camera-far={50}
         shadow-camera-left={-20}

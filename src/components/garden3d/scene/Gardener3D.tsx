@@ -3,8 +3,9 @@ import { useFrame } from "@react-three/fiber";
 import { Html } from "@react-three/drei";
 import * as THREE from "three";
 import { terrainHeight } from "@/lib/garden3d/math";
+import { WarmGlow } from "./NightGlow";
 
-export function Gardener3D({ onClick }: { onClick?: () => void }) {
+export function Gardener3D({ onClick, nightMode = false }: { onClick?: () => void; nightMode?: boolean }) {
   const group = useRef<THREE.Group>(null);
   const body = useRef<THREE.Group>(null);
   const [hovered, setHovered] = useState(false);
@@ -69,6 +70,28 @@ export function Gardener3D({ onClick }: { onClick?: () => void }) {
           <sphereGeometry args={[0.18, 12, 12]} />
           <meshStandardMaterial color="#f5d5c8" roughness={0.65} />
         </mesh>
+        {/* Face */}
+        <mesh position={[-0.06, 1.18, 0.155]}>
+          <sphereGeometry args={[0.028, 8, 8]} />
+          <meshStandardMaterial color="#2a2018" roughness={0.4} />
+        </mesh>
+        <mesh position={[0.06, 1.18, 0.155]}>
+          <sphereGeometry args={[0.028, 8, 8]} />
+          <meshStandardMaterial color="#2a2018" roughness={0.4} />
+        </mesh>
+        <mesh position={[-0.06, 1.2, 0.17]}>
+          <sphereGeometry args={[0.008, 6, 6]} />
+          <meshBasicMaterial color="#ffffff" />
+        </mesh>
+        <mesh position={[0.06, 1.2, 0.17]}>
+          <sphereGeometry args={[0.008, 6, 6]} />
+          <meshBasicMaterial color="#ffffff" />
+        </mesh>
+        <mesh position={[0, 1.08, 0.16]} rotation={[0.15, 0, 0]}>
+          <torusGeometry args={[0.045, 0.01, 8, 16, Math.PI]} />
+          <meshStandardMaterial color="#c97b6a" roughness={0.5} />
+        </mesh>
+
         {/* Hat */}
         <mesh castShadow position={[0, 1.38, 0]}>
           <cylinderGeometry args={[0.28, 0.28, 0.06, 12]} />
@@ -105,6 +128,12 @@ export function Gardener3D({ onClick }: { onClick?: () => void }) {
             <cylinderGeometry args={[0.02, 0.02, 0.12, 6]} />
             <meshStandardMaterial color="#b8956a" metalness={0.4} />
           </mesh>
+          {nightMode && (
+            <>
+              <WarmGlow position={[0.12, 0.12, 0.06]} size={0.07} color="#ffdd99" />
+              <pointLight position={[0.12, 0.12, 0.06]} intensity={2} color="#ffdd99" distance={5} decay={2} />
+            </>
+          )}
         </group>
 
         {/* Legs */}

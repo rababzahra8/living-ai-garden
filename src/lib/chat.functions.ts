@@ -9,19 +9,23 @@ import {
   resolveConversationMood,
 } from "@/lib/garden-emotions";
 import { allocateConversationNumber, grantMessageEnergy } from "@/lib/garden-energy.server";
+import { clampSeedPosition } from "@/lib/garden3d/math";
+import { checkContentSafety } from "@/lib/content-safety";
+import { withoutConversationDashes } from "@/lib/conversation-text";
 import { chatComplete, hasLlmProvider } from "@/lib/llm-providers";
 
-const SYSTEM_PROMPT = `You are the Gardener — warm and wise, tending a garden that grows with each conversation.
+const SYSTEM_PROMPT = `You are the Gardener, warm, wise and sassy, tending a garden that grows with each conversation. You have a dry wit: when someone is upbeat, playful, or a little smug, you can be lightly sassy with a teasing one-liner or affectionate roast. Never cruel, mean-spirited, or punch down. Stay kind underneath the bite.
 
 Brevity is essential:
-- Most replies: 1–2 sentences. Hard cap: 3 short sentences. Never write paragraphs.
+- Most replies: 1 to 2 sentences. Hard cap: 3 short sentences. Never write paragraphs.
 - Lead with a direct answer to what they said. Do not wander or rephrase their message back at them.
-- Garden imagery is optional — at most one light touch per reply, not every sentence.
+- Garden imagery is optional. At most one light touch per reply, not every sentence.
 - Match their energy and length: if they write "ok", "no", or one line, reply in one line.
-- At most one short question, and only when it clearly helps — never stack questions or add filler ("Ah, I see…", "Let's walk together…").
+- At most one short question, and only when it clearly helps. Never stack questions or add filler ("Ah, I see…", "Let's walk together…").
 - Skip preambles. No lectures, no monologues, no poetic descriptions unless they asked for something reflective.
+- Never use dashes (em dash, en dash, or hyphen as punctuation). Use commas or periods instead.
 
-When they share a joke, laugh briefly — one sentence — maybe a tiny garden quip.
+When they share a joke, laugh briefly in one sentence, maybe a tiny garden quip.
 
 ${gardenerEmotionGuide()}
 
@@ -56,6 +60,8 @@ export const sendGardenerMessage = createServerFn({ method: "POST" })
       .maybeSingle();
     if (threadErr || !thread) throw new Error("Thread not found");
 
+    const safety = checkContentSafety(data.content);
+
     const { data: history } = await supabase
       .from("messages")
       .select("role, content")
@@ -78,10 +84,16 @@ export const sendGardenerMessage = createServerFn({ method: "POST" })
     });
     if (insertUserErr) throw insertUserErr;
 
-    const { content: reply } = await chatComplete(messages, {
-      temperature: 0.6,
-      maxTokens: 120,
-    });
+    let reply: string;
+    if (safety.kind === "crisis" || safety.kind === "sexual") {
+      reply = withoutConversationDashes(safety.reply);
+    } else {
+      ({ content: reply } = await chatComplete(messages, {
+        temperature: 0.6,
+        maxTokens: 120,
+      }));
+      reply = withoutConversationDashes(reply);
+    }
 
     await supabase.from("messages").insert({
       thread_id: data.threadId,
@@ -93,20 +105,42 @@ export const sendGardenerMessage = createServerFn({ method: "POST" })
     const isFirst = !history || history.length === 0;
     if (isFirst) {
       const title = data.content.slice(0, 60);
-      await supabase.from("threads").update({ title, updated_at: new Date().toISOString() }).eq("id", data.threadId);
+      await supabase
+        .from("threads")
+        .update({ title, updated_at: new Date().toISOString() })
+        .eq("id", data.threadId);
     } else {
-      await supabase.from("threads").update({ updated_at: new Date().toISOString() }).eq("id", data.threadId);
+      await supabase
+        .from("threads")
+        .update({ updated_at: new Date().toISOString() })
+        .eq("id", data.threadId);
     }
 
-    const watered = isWateringJoke(data.content);
-    const growthBump = watered ? 2 : 1;
+    const watered = safety.kind === "ok" && isWateringJoke(data.content);
+    const growthBump = safety.kind === "ok" ? (watered ? 2 : 1) : 0;
 
     const priorText = (history ?? [])
       .filter((m) => m.role === "user" || m.role === "assistant")
       .map((m) => m.content);
 
-    const llmEmotion = await classifyEmotionWithLLM(priorText, data.content, reply);
-    const { hue, species, mood } = resolveConversationMood(llmEmotion, priorText, data.content, reply);
+    const llmEmotion =
+      safety.kind === "ok" ? await classifyEmotionWithLLM(priorText, data.content, reply) : null;
+    const { hue, species, mood } =
+      safety.kind === "sexual"
+        ? resolveConversationMood(
+            { emotion: "unimpressed", confidence: 0.95 },
+            priorText,
+            data.content,
+            reply,
+          )
+        : safety.kind === "crisis"
+          ? resolveConversationMood(
+              { emotion: "sad", confidence: 0.9 },
+              priorText,
+              data.content,
+              reply,
+            )
+          : resolveConversationMood(llmEmotion, priorText, data.content, reply);
 
     const { data: existingSeed } = await supabase
       .from("seeds")
@@ -133,8 +167,10 @@ export const sendGardenerMessage = createServerFn({ method: "POST" })
       const conversationNumber = await allocateConversationNumber(supabase, userId);
       const angle = Math.random() * Math.PI * 2;
       const dist = 20 + Math.random() * 30;
-      const x = 50 + Math.cos(angle) * dist * 0.4;
-      const y = 50 + Math.sin(angle) * dist * 0.4;
+      const [x, y] = clampSeedPosition(
+        50 + Math.cos(angle) * dist * 0.4,
+        50 + Math.sin(angle) * dist * 0.4,
+      );
       growth = watered ? MAX_GROWTH : MAX_GROWTH - 1;
       await supabase.from("seeds").insert({
         user_id: userId,
@@ -219,8 +255,49 @@ export const deleteThread = createServerFn({ method: "POST" })
 
     await supabase.from("messages").delete().eq("thread_id", data.threadId).eq("user_id", userId);
 
-    const { error } = await supabase.from("threads").delete().eq("id", data.threadId).eq("user_id", userId);
+    const { error } = await supabase
+      .from("threads")
+      .delete()
+      .eq("id", data.threadId)
+      .eq("user_id", userId);
     if (error) throw error;
 
     return { ok: true, conversationNumber: seed?.conversation_number ?? null };
+  });
+
+// -------- Reposition a flower inside the garden fence --------
+
+export const updateSeedPosition = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z
+      .object({
+        seedId: z.string().uuid(),
+        x: z.number().min(0).max(100),
+        y: z.number().min(0).max(100),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const [x, y] = clampSeedPosition(data.x, data.y);
+
+    const { data: seed, error } = await supabase
+      .from("seeds")
+      .select("id, thread_id")
+      .eq("id", data.seedId)
+      .eq("user_id", userId)
+      .is("deleted_at", null)
+      .not("thread_id", "is", null)
+      .maybeSingle();
+
+    if (error || !seed?.thread_id) throw new Error("Flower not found");
+
+    const { error: updateErr } = await supabase
+      .from("seeds")
+      .update({ x, y, updated_at: new Date().toISOString() })
+      .eq("id", data.seedId);
+
+    if (updateErr) throw updateErr;
+    return { x, y };
   });

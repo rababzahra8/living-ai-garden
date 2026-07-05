@@ -1,16 +1,12 @@
 import { useEffect, useState } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import type { GardenStats } from "@/lib/garden3d/types";
-import type { GardenWeather } from "@/lib/garden3d/garden-weather";
+import { WEATHER_LABELS, type GardenWeather } from "@/lib/garden3d/garden-weather";
+import type { WeatherPreference } from "@/lib/garden3d/weather-preferences";
 import { getMoonPhase } from "@/lib/garden3d/moon-phase";
+import { GardenGuideDialog } from "./GardenGuideDialog";
 
 const HUD_STORAGE_KEY = "garden-hud-expanded";
-
-const WEATHER_LABEL: Record<GardenWeather, { icon: string; label: string; hint?: string }> = {
-  clear: { icon: "☀️", label: "Clear skies" },
-  rainbow: { icon: "🌈", label: "Rainbow", hint: "Look toward the horizon behind the flowers" },
-  rain: { icon: "🌧️", label: "Gentle rain", hint: "Fades after a while — new feelings bring it back" },
-};
 
 function AnimatedStat({ label, value, icon }: { label: string; value: number; icon: string }) {
   const [display, setDisplay] = useState(0);
@@ -55,13 +51,15 @@ export function GardenHUD({
   stats,
   weather = "clear",
   nightMode = false,
+  weatherPreference = "auto",
 }: {
   stats: GardenStats;
   weather?: GardenWeather;
   nightMode?: boolean;
+  weatherPreference?: WeatherPreference;
 }) {
   const [expanded, setExpanded] = useState(() => readHudExpanded());
-  const wx = WEATHER_LABEL[weather];
+  const wx = WEATHER_LABELS[weather];
   const moon = nightMode ? getMoonPhase() : null;
 
   useEffect(() => {
@@ -69,7 +67,7 @@ export function GardenHUD({
   }, [expanded]);
 
   return (
-    <div className="glass-panel glass-panel-hud pointer-events-auto w-full max-w-[11.5rem] min-w-0 sm:max-w-xs md:max-w-sm">
+    <div className="glass-panel glass-panel-hud pointer-events-auto w-full max-w-[12.5rem] min-w-0 sm:max-w-xs md:max-w-sm">
       <div className="flex items-center gap-2 p-2.5 sm:p-3">
         <span className="h-2 w-2 shrink-0 rounded-full bg-emerald-400 shadow-[0_0_12px_rgba(52,211,153,0.9)]" />
         <div className="min-w-0 flex-1">
@@ -82,15 +80,18 @@ export function GardenHUD({
             </div>
           )}
         </div>
-        <button
-          type="button"
-          onClick={() => setExpanded((v) => !v)}
-          aria-expanded={expanded}
-          aria-label={expanded ? "Collapse garden stats" : "Expand garden stats"}
-          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-white/70 transition-colors hover:bg-white/10 hover:text-white"
-        >
-          {expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-        </button>
+        <div className="flex shrink-0 items-center gap-1">
+          <GardenGuideDialog />
+          <button
+            type="button"
+            onClick={() => setExpanded((v) => !v)}
+            aria-expanded={expanded}
+            aria-label={expanded ? "Collapse garden stats" : "Expand garden stats"}
+            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-white/70 transition-colors hover:bg-white/10 hover:text-white"
+          >
+            {expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+          </button>
+        </div>
       </div>
 
       {expanded && (
@@ -98,13 +99,16 @@ export function GardenHUD({
           <div className="mb-2 flex flex-wrap items-center gap-1.5 rounded-xl bg-white/5 px-2.5 py-1.5 text-[10px] text-white/75 sm:gap-2 sm:px-3 sm:py-2 sm:text-xs">
             <span>{wx.icon}</span>
             <span className="font-medium">{wx.label}</span>
+            {weatherPreference !== "auto" && (
+              <span className="text-white/45">· locked</span>
+            )}
             {wx.hint && <span className="hidden text-white/45 md:inline">· {wx.hint}</span>}
             {moon && <span className="ml-auto text-white/55">🌙 {moon.label}</span>}
           </div>
           <div className="grid grid-cols-2 gap-1.5 sm:gap-2">
             <AnimatedStat label="Garden Level" value={stats.level} icon="🌱" />
             <AnimatedStat label="Flowers" value={stats.flowers} icon="🌸" />
-            <AnimatedStat label="Memories" value={stats.memories} icon="🪨" />
+            <AnimatedStat label="Stones" value={stats.memories} icon="🪨" />
             <AnimatedStat label="Butterflies" value={stats.butterflies} icon="🦋" />
             <AnimatedStat label="Trees" value={stats.trees} icon="🌳" />
             <AnimatedStat label="Huts" value={stats.huts} icon="🏡" />

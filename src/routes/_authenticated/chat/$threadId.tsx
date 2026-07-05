@@ -7,6 +7,7 @@ import { toast } from "sonner";
 
 import { supabase } from "@/integrations/supabase/client";
 import { deleteThread, sendGardenerMessage } from "@/lib/chat.functions";
+import { withoutConversationDashes } from "@/lib/conversation-text";
 import { WATERING_HINTS } from "@/lib/water-jokes";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -123,7 +124,7 @@ function ChatPage() {
       qc.invalidateQueries({ queryKey: ["threads"] });
       qc.invalidateQueries({ queryKey: ["seeds"] });
       qc.invalidateQueries({ queryKey: ["garden-energy"] });
-      toast.success("Conversation archived — flower kept as a numbered memory");
+      toast.success("Chat removed — a stone marks where the flower grew");
       navigate({ to: "/garden" });
     },
     onError: (e) => toast.error(e instanceof Error ? e.message : "Could not delete"),
@@ -193,7 +194,7 @@ function ChatPage() {
               <AlertDialogHeader>
                 <AlertDialogTitle>Remove this conversation?</AlertDialogTitle>
                 <AlertDialogDescription>
-                  The chat will be removed, but its flower stays as a numbered memory in your garden.
+                  The chat will be removed. A numbered stone replaces the flower in your garden.
                   Your energy is kept.
                 </AlertDialogDescription>
               </AlertDialogHeader>
@@ -312,7 +313,7 @@ function MessageBubble({ role, content }: { role: string; content: string }) {
         <Sparkles className="h-3.5 w-3.5" />
       </div>
       <div className="max-w-[85%] whitespace-pre-wrap text-sm leading-relaxed text-foreground">
-        {content}
+        {withoutConversationDashes(content)}
       </div>
     </div>
   );
