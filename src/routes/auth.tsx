@@ -12,6 +12,7 @@ import { PasswordInput } from "@/components/ui/password-input";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { ASYNC_TIMEOUT, getErrorMessage, withTimeout } from "@/lib/async-safe";
 import { formatAuthError } from "@/lib/auth-errors";
+import { AppLogo } from "@/components/AppLogo";
 
 const authSearchSchema = z.object({
   mode: z.enum(["signin", "signup"]).optional().catch(undefined),
@@ -129,6 +130,9 @@ function AuthPage() {
 
       <div className="auth-panel relative z-10 w-full max-w-sm rounded-2xl border border-border/50 bg-card/90 p-6 shadow-lg backdrop-blur-sm">
         <div className="mb-6 text-center">
+          <div className="mb-3 flex justify-center">
+            <AppLogo size={48} />
+          </div>
           <h1 className="text-2xl font-semibold tracking-tight text-foreground">
             {mode === "signin" ? "Welcome back" : "Join the garden"}
           </h1>

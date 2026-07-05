@@ -5,6 +5,7 @@ import { WEATHER_LABELS, type GardenWeather } from "@/lib/garden3d/garden-weathe
 import type { WeatherPreference } from "@/lib/garden3d/weather-preferences";
 import { getMoonPhase } from "@/lib/garden3d/moon-phase";
 import { GardenGuideDialog } from "./GardenGuideDialog";
+import { AppLogo } from "@/components/AppLogo";
 
 const HUD_STORAGE_KEY = "garden-hud-expanded";
 
@@ -69,7 +70,7 @@ export function GardenHUD({
   return (
     <div className="glass-panel glass-panel-hud pointer-events-auto w-full max-w-[12.5rem] min-w-0 sm:max-w-xs md:max-w-sm">
       <div className="flex items-center gap-2 p-2.5 sm:p-3">
-        <span className="h-2 w-2 shrink-0 rounded-full bg-emerald-400 shadow-[0_0_12px_rgba(52,211,153,0.9)]" />
+        <AppLogo size={28} variant="dark" className="sm:h-8 sm:w-8" />
         <div className="min-w-0 flex-1">
           <div className="truncate text-xs font-semibold text-white sm:text-sm">Living Garden</div>
           {!expanded && (

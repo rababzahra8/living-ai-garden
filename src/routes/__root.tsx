@@ -112,7 +112,12 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     ],
     links: [
       { rel: "stylesheet", href: appCss },
+      { rel: "manifest", href: "/site.webmanifest" },
+      { rel: "icon", href: "/logo/aigarden-icon-light.svg", type: "image/svg+xml", media: "(prefers-color-scheme: light)" },
+      { rel: "icon", href: "/logo/aigarden-icon-dark.svg", type: "image/svg+xml", media: "(prefers-color-scheme: dark)" },
       { rel: "icon", href: "/favicon.ico", sizes: "any" },
+      { rel: "icon", href: "/icons/icon-32.png", sizes: "32x32", type: "image/png" },
+      { rel: "icon", href: "/icons/icon-16.png", sizes: "16x16", type: "image/png" },
       { rel: "apple-touch-icon", href: "/apple-touch-icon.png", sizes: "180x180" },
     ],
   };

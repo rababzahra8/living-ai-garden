@@ -1,5 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { Sparkles } from "lucide-react";
+import { AppLogo } from "@/components/AppLogo";
 
 export function LandingOverlay({ showcaseLabel }: { showcaseLabel?: string }) {
   return (
@@ -25,6 +26,9 @@ export function LandingOverlay({ showcaseLabel }: { showcaseLabel?: string }) {
         </div>
 
         <div className="glass-panel pointer-events-auto w-full max-w-2xl px-4 py-6 sm:px-8 sm:py-10">
+          <div className="mb-4 flex justify-center sm:mb-5">
+            <AppLogo size={56} variant="dark" className="sm:h-16 sm:w-16" />
+          </div>
           <h1 className="text-balance bg-gradient-to-b from-white to-white/70 bg-clip-text text-[clamp(1.75rem,8vw,3.75rem)] font-semibold leading-tight tracking-tight text-transparent">
             The Living AI Garden
           </h1>

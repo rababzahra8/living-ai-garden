@@ -1,80 +1,91 @@
 #!/usr/bin/env node
-/** Regenerate favicon.ico, og-image.jpg, apple-touch-icon.png from public/icon.jpg or icon.png */
-import { readFileSync, writeFileSync, copyFileSync, existsSync, unlinkSync } from "node:fs";
-import { spawnSync } from "node:child_process";
+/** Regenerate favicons, PWA icons, and og-image from public/logo/aigarden-icon-light.svg */
+import { readFileSync, writeFileSync, existsSync, mkdirSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
+import sharp from "sharp";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const publicDir = resolve(root, "public");
-const iconPath = ["icon.jpg", "icon.png", "icon.jpeg"]
-  .map((name) => resolve(publicDir, name))
-  .find((path) => existsSync(path));
+const logoDir = resolve(publicDir, "logo");
+const iconsDir = resolve(publicDir, "icons");
+const sourceSvg = resolve(logoDir, "aigarden-icon-light.svg");
 
-function sips(args) {
-  const r = spawnSync("sips", args, { stdio: "inherit" });
-  if (r.status !== 0) process.exit(r.status ?? 1);
+function readPngDimensions(png) {
+  return { width: png.readUInt32BE(16), height: png.readUInt32BE(20) };
 }
 
-function sipsSize(path) {
-  const r = spawnSync("sips", ["-g", "pixelWidth", "-g", "pixelHeight", path], { encoding: "utf8" });
-  const w = Number(r.stdout.match(/pixelWidth:\s*(\d+)/)?.[1] ?? 0);
-  const h = Number(r.stdout.match(/pixelHeight:\s*(\d+)/)?.[1] ?? 0);
-  return { w, h };
-}
+function pngToIco(pngPaths, icoPath) {
+  const images = pngPaths.map((path) => {
+    const data = readFileSync(path);
+    return { data, ...readPngDimensions(data) };
+  });
 
-function sipsResize(input, output, size) {
-  copyFileSync(input, output);
-  sips(["-Z", String(size), output, "--out", output]);
-}
-
-function centerSquareCrop(input, output) {
-  copyFileSync(input, output);
-  const { w, h } = sipsSize(output);
-  const side = Math.min(w, h);
-  const offsetX = Math.max(0, Math.floor((w - side) / 2));
-  const offsetY = Math.max(0, Math.floor((h - side) / 2));
-  sips(["--cropToHeightWidth", String(side), String(side), "--cropOffset", String(offsetY), String(offsetX), output, "--out", output]);
-}
-
-function pngToIco(pngPath, icoPath) {
-  const png = readFileSync(pngPath);
-  const width = png.readUInt32BE(16);
-  const height = png.readUInt32BE(20);
   const header = Buffer.alloc(6);
   header.writeUInt16LE(0, 0);
   header.writeUInt16LE(1, 2);
-  header.writeUInt16LE(1, 4);
-  const entry = Buffer.alloc(16);
-  entry.writeUInt8(width >= 256 ? 0 : width, 0);
-  entry.writeUInt8(height >= 256 ? 0 : height, 1);
-  entry.writeUInt8(0, 2);
-  entry.writeUInt8(0, 3);
-  entry.writeUInt16LE(1, 4);
-  entry.writeUInt16LE(32, 6);
-  entry.writeUInt32LE(png.length, 8);
-  entry.writeUInt32LE(22, 12);
-  writeFileSync(icoPath, Buffer.concat([header, entry, png]));
+  header.writeUInt16LE(images.length, 4);
+
+  let offset = 6 + images.length * 16;
+  const entries = [];
+  const blobs = [];
+
+  for (const img of images) {
+    const entry = Buffer.alloc(16);
+    entry.writeUInt8(img.width >= 256 ? 0 : img.width, 0);
+    entry.writeUInt8(img.height >= 256 ? 0 : img.height, 1);
+    entry.writeUInt8(0, 2);
+    entry.writeUInt8(0, 3);
+    entry.writeUInt16LE(1, 4);
+    entry.writeUInt16LE(32, 6);
+    entry.writeUInt32LE(img.data.length, 8);
+    entry.writeUInt32LE(offset, 12);
+    entries.push(entry);
+    blobs.push(img.data);
+    offset += img.data.length;
+  }
+
+  writeFileSync(icoPath, Buffer.concat([header, ...entries, ...blobs]));
 }
 
-if (!iconPath) {
-  console.error("Missing public/icon.jpg or public/icon.png");
+if (!existsSync(sourceSvg)) {
+  console.error("Missing public/logo/aigarden-icon-light.svg");
   process.exit(1);
 }
 
-const squareCrop = resolve(publicDir, ".icon-square.png");
-const faviconPng = resolve(publicDir, ".favicon-tmp.png");
-const ogImage = resolve(publicDir, "og-image.jpg");
-const appleTouch = resolve(publicDir, "apple-touch-icon.png");
+mkdirSync(iconsDir, { recursive: true });
 
-sipsResize(iconPath, ogImage, 1200);
-centerSquareCrop(iconPath, squareCrop);
-sips(["-s", "format", "png", squareCrop, "--out", squareCrop]);
-sipsResize(squareCrop, appleTouch, 180);
-sipsResize(squareCrop, faviconPng, 64);
-pngToIco(faviconPng, resolve(publicDir, "favicon.ico"));
-unlinkSync(squareCrop);
-unlinkSync(faviconPng);
+const svg = readFileSync(sourceSvg);
+const sizes = [16, 32, 48, 64, 128, 180, 192, 512];
 
-const { w, h } = sipsSize(ogImage);
-console.log(`Generated favicon.ico, og-image.jpg (${w}x${h}), apple-touch-icon.png`);
+for (const size of sizes) {
+  const out = resolve(iconsDir, `icon-${size}.png`);
+  await sharp(svg, { density: Math.max(72, Math.ceil((size / 512) * 144)) })
+    .resize(size, size)
+    .png()
+    .toFile(out);
+}
+
+await sharp(svg, { density: 216 }).resize(1200, 1200).jpeg({ quality: 90 }).toFile(resolve(publicDir, "og-image.jpg"));
+
+writeFileSync(resolve(publicDir, "apple-touch-icon.png"), readFileSync(resolve(iconsDir, "icon-180.png")));
+
+pngToIco(
+  [16, 32, 48].map((s) => resolve(iconsDir, `icon-${s}.png`)),
+  resolve(publicDir, "favicon.ico"),
+);
+
+const manifest = {
+  name: "Living AI Garden",
+  short_name: "AI Garden",
+  icons: [
+    { src: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
+    { src: "/icons/icon-512.png", sizes: "512x512", type: "image/png" },
+  ],
+  theme_color: "#172417",
+  background_color: "#F5F1E3",
+};
+
+writeFileSync(resolve(publicDir, "site.webmanifest"), `${JSON.stringify(manifest, null, 2)}\n`);
+
+console.log("Generated favicon.ico, og-image.jpg, apple-touch-icon.png, icons/*, site.webmanifest");

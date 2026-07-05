@@ -8,9 +8,9 @@ import {
   RotateCcw,
   Sparkles,
   Trees,
-  Zap,
 } from "lucide-react";
 import { markPromoSeen } from "@/lib/promo-seen";
+import { AppLogo } from "@/components/AppLogo";
 
 export const Route = createFileRoute("/promo")({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -190,7 +190,7 @@ function PromoPage() {
 
       <header className="relative z-10 flex shrink-0 items-center justify-between px-5 py-4 sm:px-8">
         <div className="flex items-center gap-2">
-          <Zap className="h-4 w-4 text-emerald-400" />
+          <AppLogo size={28} variant="dark" />
           <span className="text-sm font-medium tracking-wide text-white/80">Living AI Garden</span>
         </div>
         {fromGarden ? (
